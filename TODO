@@ -1,0 +1,18 @@
+Stage 1:
+========
+
+ * create IP filters from ISPs in GeoIPASNum2 to get raw NDT results
+
+Stage 2
+=======
+
+ * create filters from raw results of stage 1 (sip, cip, ts) to extract
+   (sip, cip, ts, test_id)
+
+Stage 3
+=======
+
+ * create filters from raw results of stage 2 (sip, cip, ts, test_id) to extract
+   all hops for test_id (sip, cip, test_id, h1...hn)
+
+
