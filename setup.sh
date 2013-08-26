@@ -50,7 +50,8 @@ function generate_ispquery () {
         m4 -DISP_FILTER_FILENAME=$ISPNAME.input sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga02.sql
     fi
 
-    QV=$HOME/source/m-lab.analysis/queryview/queryview.py 
+    mkdir -p graphs
+    QV=./queryview.py 
     $QV --query $ISPNAME.lga01 \
         --count test_count \
         --timestamp day_timestamp \
@@ -70,6 +71,6 @@ function generate_ispquery () {
 
 generate_ispquery comcast
 generate_ispquery cablevision
-generate_ispquery warner
-generate_ispquery rcn
-generate_ispquery verizon
+#generate_ispquery warner
+#generate_ispquery rcn
+#generate_ispquery verizon
