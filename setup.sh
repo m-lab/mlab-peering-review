@@ -44,10 +44,16 @@ function generate_ispquery () {
     fi
 
     if ! test -f sql/$ISPNAME.lga01.sql ; then
-        m4 -DISP_FILTER_FILENAME=$ISPNAME.input sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga01.sql
+        m4 -DISP_FILTER_FILENAME=$ISPNAME.input \
+           -DDATETABLE=[m_lab.2013_08] \
+           -DSERVERIPS="'74.63.50.19','74.63.50.32','74.63.50.47'" \
+            sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga01.sql
     fi
     if ! test -f sql/$ISPNAME.lga02.sql ; then
-        m4 -DISP_FILTER_FILENAME=$ISPNAME.input sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga02.sql
+        m4 -DISP_FILTER_FILENAME=$ISPNAME.input \
+           -DDATETABLE=[m_lab.2013_08] \
+           -DSERVERIPS="'38.106.70.147','38.106.70.160','38.106.70.173'" \
+            sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga02.sql
     fi
 
     mkdir -p graphs
@@ -56,16 +62,16 @@ function generate_ispquery () {
         --count test_count \
         --timestamp day_timestamp \
         -l med_rate \
-        -D DATETABLE=[m_lab.2013_08] \
-        -D SERVERIPS="'74.63.50.19','74.63.50.32','74.63.50.47'" \
+        --ylabel "Mbps" \
+        --title "LGA01 - Internap" \
         --output graphs/$ISPNAME.lga01.png
 
     $QV --query $ISPNAME.lga02 \
         --count test_count \
         --timestamp day_timestamp \
         -l med_rate \
-        -D DATETABLE=[m_lab.2013_08] \
-        -D SERVERIPS="'38.106.70.147','38.106.70.160','38.106.70.173'" \
+        --ylabel "Mbps" \
+        --title "LGA02 - Cogent" \
         --output graphs/$ISPNAME.lga02.png
 }
 
