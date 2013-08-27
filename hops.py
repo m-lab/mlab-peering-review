@@ -68,8 +68,6 @@ def hop_array(filename, rates, skip=1):
     site = (s[1].rpartition('.'))[0]
     client = s[2]
     print "Another data point ..."
-    #hop_a = lookup_as(s[3], ases, as_cache)
-    #hop_b = lookup_as(s[4], ases, as_cache)
     hop_a = s[3]
     hop_b = s[4]
     rates_index = site + "," + client
@@ -93,7 +91,7 @@ def asify_hop_array(hops, ases):
         as_hops[as_hop_a] = {}
       if as_hop_b not in as_hops[as_hop_a]:
         as_hops[as_hop_a][as_hop_b] = ""
-      as_hops[as_hop_a][as_hop_b] += hops[hop_a][hop_b] + ","
+      as_hops[as_hop_a][as_hop_b] += hops[hop_a][hop_b]
   return as_hops
 
 def write_hop_array(filename, hops):
