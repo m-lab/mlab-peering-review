@@ -29,9 +29,9 @@ fi
 function generate_ispquery () {
     local ISPNAME=$1
     AFTERFIRST=
-    rm -f $ISPNAME.input
+    rm -f input/$ISPNAME.input
 
-    if ! test -f $ISPNAME.input ; then
+    if ! test -f input/$ISPNAME.input ; then
         FILTER_PREFIX="PARSE_IP(web100_log_entry.connection_spec.remote_ip) "
         grep -i $ISPNAME $IP2ASNFILE.csv | \
             awk -F, '{print $1,$2}' | \
@@ -40,20 +40,20 @@ function generate_ispquery () {
                 FILTER="$FILTER_PREFIX BETWEEN $IP_low AND $IP_high "
                 echo -n "        $FILTER" 
                 AFTERFIRST=1
-            done > $ISPNAME.input
+            done > input/$ISPNAME.input
     fi
 
     if ! test -f sql/$ISPNAME.lga01.sql ; then
-        m4 -DISP_FILTER_FILENAME=$ISPNAME.input \
+        m4 -DISP_FILTER_FILENAME=input/$ISPNAME.input \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="'74.63.50.19','74.63.50.32','74.63.50.47'" \
-            sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga01.sql
+            tmpl/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga01.sql
     fi
     if ! test -f sql/$ISPNAME.lga02.sql ; then
-        m4 -DISP_FILTER_FILENAME=$ISPNAME.input \
+        m4 -DISP_FILTER_FILENAME=input/$ISPNAME.input \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="'38.106.70.147','38.106.70.160','38.106.70.173'" \
-            sql/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga02.sql
+            tmpl/ndt-tmpl-generic.m4.sql > sql/$ISPNAME.lga02.sql
     fi
 
     mkdir -p graphs

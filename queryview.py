@@ -243,6 +243,7 @@ def bigquery_api(query_string, output_filename, options):
 
     except HttpError as err:
         logging.error('Error running query: %s', pprint.pprint(err.content))
+        print 'Error running query: %s' % pprint.pprint(status['status'])
         sys.exit(1)
 
     except AccessTokenRefreshError:
@@ -330,11 +331,11 @@ def parse_args():
         print "Error: please specify at least 2 csv files to merge."
         sys.exit(1)
 
-    if options.timestamp is None:
+    if options.timestamp is None and options.plot:
         print "Error: Please provide --timestamp <columname>"
         sys.exit(1)
 
-    if len(options.columns) == 0 and len(options.mergefiles) == 0:
+    if len(options.columns) == 0 and len(options.mergefiles) == 0 and options.plot:
         print ("Error: Provide at least one line, --column <columname>")
         sys.exit(1)
 
@@ -361,8 +362,11 @@ def get_filenames(query_name, define_values=[]):
     max_len = os.statvfs(CSV_PATH)[statvfs.F_NAMEMAX]
     extension = extension[:max_len-len(query_name)-4]
  
-    query_filename = os.path.join(SQL_PATH, query_name+'.sql')
-    cache_filename = os.path.join(CSV_PATH, query_name+extension+'.csv')
+    query_filename = query_name
+    cache_filename = os.path.join(CSV_PATH, os.path.basename(query_name)+extension+'.csv')
+    if not os.path.exists(query_name):
+        query_filename = os.path.join(SQL_PATH, query_name+'.sql')
+        cache_filename = os.path.join(CSV_PATH, query_name+extension+'.csv')
     return (query_filename, cache_filename)
 
 def read_csvfile(cache_file, return_dicts):
