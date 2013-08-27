@@ -55,9 +55,8 @@ def rate_array(filename, skip=1):
   f.close()
   return rate
 
-def hop_array(filename, rates, ases, skip=1):
+def hop_array(filename, rates, skip=1):
   hops = {}
-  as_cache = {}
   f = open(filename, 'r')
   skipped = 0
   for line in f:
@@ -68,8 +67,10 @@ def hop_array(filename, rates, ases, skip=1):
     site = (s[1].rpartition('.'))[0]
     client = s[2]
     print "Another data point ..."
-    hop_a = lookup_as(s[3], ases, as_cache)
-    hop_b = lookup_as(s[4], ases, as_cache)
+    #hop_a = lookup_as(s[3], ases, as_cache)
+    #hop_b = lookup_as(s[4], ases, as_cache)
+    hop_a = s[3]
+    hop_b = s[4]
     rates_index = site + "," + client
     if (hop_a not in hops):
       hops[hop_a] = {}
@@ -78,6 +79,21 @@ def hop_array(filename, rates, ases, skip=1):
     hops[hop_a][hop_b] += rates[rates_index] + ","
   f.close()
   return hops
+
+def asify_hop_array(hops, ases):
+  as_hops = {}
+  as_cache = {}
+  for hop_a in hops:
+    for hop_b in hops[hop_a]:
+      print "Hop pair ..."
+      as_hop_a = lookup_as(hop_a, ases, as_cache)
+      as_hop_b = lookup_as(hop_b, ases, as_cache)
+      if as_hop_a not in as_hops:
+        as_hops[as_hop_a] = {}
+      if as_hop_b not in as_hops[as_hop_a]:
+        as_hops[as_hop_a][as_hop_b] = ""
+      as_hops[as_hop_a][as_hop_b] += hops[hop_a][hop_b] + ","
+  return as_hops
 
 def write_hop_array(filename, hops):
   f = open(filename, 'w')
@@ -93,5 +109,6 @@ def write_hop_array(filename, hops):
 
 rate = rate_array("cache/stage1.comcast.lga01.sql.csv")
 ases = as_array("GeoIPASNum2.csv", 0)
-hops = hop_array("cache/stage3.comcast.lga01.sql.csv", rate, ases)
-write_hop_array("cache/hops.csv", hops)
+hops = hop_array("cache/stage3.comcast.lga01.sql.csv", rate)
+as_hops = asify_hop_array(hops, ases)
+write_hop_array("cache/hops.csv", as_hops)
