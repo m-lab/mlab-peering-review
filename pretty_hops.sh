@@ -1,18 +1,13 @@
 #!/bin/bash
 
-awk --field-separator=, '
-  function to_as_string(as_no) 
-  {
-    if (as_no == "NO AS")
-      return as_no
-    "grep " as_no " GeoIPASNum2.csv | head -n1 | sed \"s/^.*\\(AS.*$\\)/\\1/\"" | getline output
-    return output;
-  }
-  {
-  if ($1 != $2) { 
-    print to_as_string($1) "(" $1 ")" "->" to_as_string($2) "(" $2 ")";
-  }
-}' cache/hops.csv
+export LC_ALL=C
+cat cache/hops.$1.$2.csv | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5}' | \
+   while read as1 AS1 as2 AS2 count ; do
+      if test "$as1" = "$as2" ; then continue ; fi
+      #AS1=`LC_ALL=C grep "$as1 " GeoIPASNum2.csv | head -n1 | awk -F, '{print $3}' | tr '"-' ' ' | awk '{print $2}' `
+      #AS2=`LC_ALL=C grep "$as2 " GeoIPASNum2.csv | head -n1 | awk -F, '{print $3}' | tr '"-' ' ' | awk '{print $2}' `
+      printf "%-10s -> %-10s %-4s %-15s -> %-15s\n" "$as1" "$as2" $count "$AS1" "$AS2"
+   done
 
 #"s/^.*\(AS[0-9]\+\).*$/\1/"
 
