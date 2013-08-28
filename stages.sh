@@ -158,6 +158,9 @@ function handle_stage3_query () {
 
 }
 
+#ISP=cablevision
+#ISP=warner
+#ISP=rcn
 ISP=comcast
 # NDT server ip addrs
 handle_stage1_query $ISP        stage1 lga01 "'74.63.50.19','74.63.50.32','74.63.50.47'"

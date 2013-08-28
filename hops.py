@@ -3,6 +3,7 @@ import socket
 import struct
 import sys
 
+
 #
 # from the web!
 #
@@ -11,6 +12,13 @@ def iptoint(ip):
 
 def inttoip(ip):
     return socket.inet_ntoa(hex(ip)[2:].zfill(8).decode('hex'))
+
+MANUAL_ASN_MAP = [
+  (iptoint('67.59.224.1'), iptoint('67.59.255.254'), "AS6128 Cablevision Systems Corp."),
+  (iptoint('65.19.96.0'), iptoint('65.19.127.255'), "AS6128 Cablevision Systems Corp."),
+  (iptoint('64.15.0.0'), iptoint('64.15.15.255'), "AS6128 Cablevision Systems Corp."),
+  (iptoint('10.0.0.0'), iptoint('10.255.255.255'), "AS000 Private Space."),
+]
 
 AS2NAME={}
 def get_asno(as_raw):
@@ -37,6 +45,11 @@ def as_array(filename,skip_header=True):
     high = int(s[1])
     ases[counter] = (as_no,low,high)
     counter += 1
+  for row in MANUAL_ASN_MAP:
+    (low,high,as_long) = row
+    as_no = get_asno(as_long)
+    ases[counter] = (as_no,low,high) 
+    counter += 1
   f.close()
   return ases
 
@@ -51,6 +64,7 @@ def lookup_as(ip, ases, cache):
       return as_no
   # note: first-char as '[a-z]' make graphviz easier.
   # note: also only return first three octets to reduce number of 'unknowns'
+  print inttoip(ip)
   return "x"+(inttoip(ip).rpartition('.'))[0].replace(".","")
 
 def rate_array(filename, skip_header=True):

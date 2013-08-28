@@ -17,12 +17,12 @@ cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2}' | \
 cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
    while read as1 AS1 as2 AS2 count rate ; do
       if test "$as1" = "$as2" ; then continue ; fi
-      printf "$as1->$as2 [ label=\"%0.2f\"];\n" "$rate"
+      printf "$as1->$as2 [ label=\"%0.2f\"];\n" "$count"
    done
 
 cat <<EOF 
 overlap=false;
-label="NY to Comcast";
+label="NY to $1";
 fontsize=12;
 }
 EOF
