@@ -495,7 +495,7 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
         p, = ax1.plot_date(ts2d(x_list), y_lists[y_col], 
               xdate=True, ydate=False, marker='.', markersize=3,
               color=color, linewidth=(1 if y_err is None else 1.5),
-              linestyle='-', figure=fig, label=y_col)
+              linestyle='', figure=fig, label=y_col)
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_list), y_lists[y_col], 

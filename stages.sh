@@ -158,29 +158,33 @@ function handle_stage3_query () {
 
 }
 
+
 #ISP=cablevision
 #ISP=warner
 #ISP=rcn
 ISP=comcast
-# NDT server ip addrs
-handle_stage1_query $ISP        stage1 lga01 "'74.63.50.19','74.63.50.32','74.63.50.47'"
-handle_stage1_query $ISP        stage1 lga02 "'38.106.70.147','38.106.70.160','38.106.70.173'"
+#for ISP in cablevision warner rcn comcast ; do
+for ISP in comcast ; do
+    # NDT server ip addrs
+    handle_stage1_query $ISP        stage1 lga01 "'74.63.50.19','74.63.50.32','74.63.50.47'"
+    handle_stage1_query $ISP        stage1 lga02 "'38.106.70.147','38.106.70.160','38.106.70.173'"
 
-# NPAD (*not* NDT) server ip addrs
-handle_stage2_query $ISP        stage2 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
-handle_stage2_query $ISP        stage2 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
+    # NPAD (*not* NDT) server ip addrs
+    handle_stage2_query $ISP        stage2 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
+    handle_stage2_query $ISP        stage2 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
 
-# NPAD (*not* NDT) server ip addrs
-handle_stage3_query $ISP        stage3 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
-handle_stage3_query $ISP        stage3 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
+    # NPAD (*not* NDT) server ip addrs
+    handle_stage3_query $ISP        stage3 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
+    handle_stage3_query $ISP        stage3 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
 
-./hops.py $ISP    lga01
-./hops.py $ISP    lga02
+    ./hops.py $ISP    lga01
+    ./hops.py $ISP    lga02
 
-./diagram.sh $ISP    lga01 > input/$ISP.lga01.gv
-dot -Tpng input/$ISP.lga01.gv > graphs/$ISP.lga01.png
-./diagram.sh $ISP lga02 > input/$ISP.lga02.gv
-dot -Tpng input/$ISP.lga02.gv > graphs/$ISP.lga02.png
+    ./diagram.sh $ISP    lga01 > input/$ISP.lga01.gv
+    dot -Tpng input/$ISP.lga01.gv > graphs/$ISP.lga01.png
+    ./diagram.sh $ISP lga02 > input/$ISP.lga02.gv
+    dot -Tpng input/$ISP.lga02.gv > graphs/$ISP.lga02.png
+done
 
 #generate_ispquery warner
 #generate_ispquery rcn
