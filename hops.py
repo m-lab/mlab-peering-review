@@ -50,7 +50,8 @@ def lookup_as(ip, ases, cache):
         cache[ip] = as_no
       return as_no
   # note: first-char as '[a-z]' make graphviz easier.
-  return "x"+inttoip(ip).replace(".", "")
+  # note: also only return first three octets to reduce number of 'unknowns'
+  return "x"+(inttoip(ip).rpartition('.'))[0].replace(".","")
 
 def rate_array(filename, skip_header=True):
   rate = {}
