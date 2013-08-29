@@ -9,7 +9,7 @@ SELECT
                      web100_log_entry.snap.SndLimTimeCwnd +
                      web100_log_entry.snap.SndLimTimeSnd) AS raw_download_rate,
     -- RETRANSMISSION
-    (web100_log_entry.snap.OctetsRetrans/web100_log_entry.snap.DataOctetsOut)  AS raw_retrans,
+    -- (web100_log_entry.snap.OctetsRetrans/web100_log_entry.snap.DataOctetsOut)  AS raw_retrans,
     -- TODO: maybe network or client or server-limited time ratios?
 FROM 
     DATETABLE
