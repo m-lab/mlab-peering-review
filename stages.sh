@@ -33,27 +33,51 @@ mkdir -p sql
 set -e
 set -x
 
+function get_three_ips () {
+    local service=$1
+    local site=$2
+    local iplist=
+    AFTERFIRST=
+    for mlab in mlab1 mlab2 mlab3 ; do
+        if test -n "$AFTERFIRST" ; then iplist+=","; fi
+        hn="$service.$mlab.$site.measurement-lab.org"
+        ip=$( lookup_ip $hn )
+        iplist+="'$ip'"
+        AFTERFIRST=1
+    done
+    echo $iplist
+}
+
 function handle_stage1_query () {
     local ispname=$1
-    local stage=$2
-    local site=$3
-    local iplist=$4
+    local site=$2
+    local stage=stage1
+    local iplist=
 
-    AFTERFIRST=
+    iplist=$( get_three_ips ndt.iupui $site )
+
     filtername=input/$stage.$ispname.$site.input 
     sqlname=$stage.$ispname.$site.sql
     rm -f $filtername
 
+    if test "$ispname" = "cox" ; then
+        ispname=" cox"
+    elif test "$ispname" = "verizon" ; then
+        ispname="AS701 "
+    fi
+
+    AFTERFIRST=
     if ! test -f $filtername ; then
         FILTER_PREFIX="PARSE_IP(web100_log_entry.connection_spec.remote_ip) "
-        grep -i $ispname $IP2ASNFILE.csv | \
+        #FILTER_PREFIX="PARSE_IP(connection_spec.client_ip) "
+        grep -i "$ispname" $IP2ASNFILE.csv | \
             awk -F, '{print $1,$2}' | \
             while read IP_low IP_high ; do
                 if test -n "$AFTERFIRST" ; then echo " OR" ; fi
                 FILTER="$FILTER_PREFIX BETWEEN $IP_low AND $IP_high "
-                echo -n "        $FILTER" 
+                echo -n "$FILTER" 
                 AFTERFIRST=1
-            done > $filtername
+            done | tail -1500 > $filtername
     fi
 
     if ! test -f sql/$sqlname ; then
@@ -70,11 +94,11 @@ function handle_stage1_query () {
 
 function handle_stage2_query () {
     local ispname=$1
-    local stage=$2
-    local site=$3
-    local iplist=$4
+    local site=$2
+    local stage=stage2
+    local iplist=
 
-    AFTERFIRST=
+    iplist=$( get_three_ips npad.iupui $site )
 
     inputcsv=cache/stage1.$ispname.$site.sql.csv
     filtername=input/$stage.$ispname.$site.input
@@ -82,6 +106,7 @@ function handle_stage2_query () {
 
     rm -f $filtername
 
+    AFTERFIRST=
     if ! test -f $filtername ; then
 
         FILTER_PREFIX=""
@@ -117,11 +142,11 @@ function handle_stage2_query () {
 
 function handle_stage3_query () {
     local ispname=$1
-    local stage=$2
-    local site=$3
-    local iplist=$4
+    local site=$2
+    local stage=stage3
+    local iplist=
 
-    AFTERFIRST=
+    iplist=$( get_three_ips npad.iupui $site )
 
     inputcsv=cache/stage2.$ispname.$site.sql.csv
     filtername=input/$stage.$ispname.$site.input
@@ -129,6 +154,7 @@ function handle_stage3_query () {
 
     rm -f $filtername
 
+    AFTERFIRST=
     if ! test -f $filtername ; then
 
         FILTER_PREFIX=""
@@ -159,35 +185,46 @@ function handle_stage3_query () {
 
 }
 
+function lookup_ip () {
+    local host=$1
+    PYSCRIPT="import socket; print socket.gethostbyname('"$host"')"
+    ip=$( python -c "$PYSCRIPT" 2> /dev/null )
+    if test $? -eq 0 ; then
+        echo $ip
+    fi
+}
+
+
+# NYC - cablevision, time warner, rcn, comcast, verizon
+# LAX - time warner, charter, cox, verizon, at&t 
+# ORD - comcast, rcn, wide open west?
+# NUQ - 
+# IAD - 
+# DFW - 
+
+SITE=${1:?HELP: Please provide an M-Lab site name, i.e. lga01, lax01, etc.}
+ISPLIST=${2:?HELP: Please provide a short ISP name, i.e. warner, comcast, verizon}
 
 #ISP=cablevision
 #ISP=warner
 #ISP=rcn
-ISP=comcast
-#for ISP in cablevision warner rcn comcast ; do
-#for ISP in rcn ; do
-for ISP in comcast ; do
-    # NDT server ip addrs
-    handle_stage1_query $ISP        stage1 lga01 "'74.63.50.19','74.63.50.32','74.63.50.47'"
-    handle_stage1_query $ISP        stage1 lga02 "'38.106.70.147','38.106.70.160','38.106.70.173'"
+#ISP=comcast
+#for ISP in cablevision warner comcast ; do
 
-    # NPAD (*not* NDT) server ip addrs
-    handle_stage2_query $ISP        stage2 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
-    handle_stage2_query $ISP        stage2 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
+for ISP in $ISPLIST ; do
 
-    # NPAD (*not* NDT) server ip addrs
-    handle_stage3_query $ISP        stage3 lga01 "'74.63.50.10','74.63.50.23','74.63.50.43'"
-    handle_stage3_query $ISP        stage3 lga02 "'38.106.70.146','38.106.70.151','38.106.70.172'"
+    # get measurements from client-ips based on ASN-to-IP ranges for $ISP
+    handle_stage1_query $ISP $SITE
 
-    ./hops.py $ISP    lga01
-    ./hops.py $ISP    lga02
+    # collect all client-ips to find traceroutes
+    handle_stage2_query $ISP $SITE
 
-    ./diagram.sh $ISP    lga01 > input/$ISP.lga01.gv
-    dot -Tpng input/$ISP.lga01.gv > graphs/$ISP.lga01.png
-    ./diagram.sh $ISP lga02 > input/$ISP.lga02.gv
-    dot -Tpng input/$ISP.lga02.gv > graphs/$ISP.lga02.png
+    # use traceroute test_ids to find all hops along traces.
+    handle_stage3_query $ISP $SITE
+
+    ./hops.py   $ISP $SITE
+
+    ./diagram.sh $ISP $SITE > input/$ISP.$SITE.gv
+    dot -Tpng input/$ISP.$SITE.gv > graphs/$ISP.$SITE.png
+
 done
-
-#generate_ispquery warner
-#generate_ispquery rcn
-#generate_ispquery verizon
