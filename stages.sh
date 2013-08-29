@@ -25,6 +25,7 @@ if ! test -f $IP2ASNFILE.csv ; then
         exit 1
     fi
 fi
+mkdir -p graphs
 mkdir -p cache
 mkdir -p input
 mkdir -p sql
@@ -164,6 +165,7 @@ function handle_stage3_query () {
 #ISP=rcn
 ISP=comcast
 #for ISP in cablevision warner rcn comcast ; do
+#for ISP in rcn ; do
 for ISP in comcast ; do
     # NDT server ip addrs
     handle_stage1_query $ISP        stage1 lga01 "'74.63.50.19','74.63.50.32','74.63.50.47'"

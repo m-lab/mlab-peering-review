@@ -20,7 +20,7 @@ cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
    while read as1 AS1 as2 AS2 count rate ; do
       if test "$as1" = "$as2" ; then continue ; fi
       if test $count -gt 200 ; then
-          printf "$as1->$as2 [ label=\"%0.2f\\\\n%d\"];\n" "$rate" "$count"
+          printf "$as1->$as2 [ label=\"%0.2f\\\\n%d\\\\n%s\"];\n" "$rate" "$count" "$as2"
       fi
    done
 

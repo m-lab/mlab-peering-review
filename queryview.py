@@ -7,6 +7,7 @@ import time
 import subprocess
 import statvfs
 
+import datetime
 import httplib2
 import logging
 import pprint
@@ -87,6 +88,10 @@ gflags.DEFINE_float("ymax", None, "YMAX on graph")
 
 gflags.DEFINE_string("ylabel", None, "Y-Label on graph.")
 gflags.DEFINE_string("title",  None, "Title on graph.")
+gflags.DEFINE_list("between",  None, "Specify a time-window YYYYMMDD1,YYYYMMDD2 for graph.")
+gflags.DEFINE_integer("offset",  None, "Specify an offset to all x-axis timestamps. i.e. to adjust UTC times")
+gflags.DEFINE_string("pivot",  None, "Specify a time to pivot all timestamps, YYYYMMDDTHH:MM")
+gflags.DEFINE_string("datefmt",  "%b %d", "Specify a time format for x-axis")
 
 gflags.DEFINE_bool("plot", True,
                    "Enable/disable plotting of the resulting data.")
@@ -327,6 +332,21 @@ def parse_args():
         print "Error:                --merge <filename>"
         sys.exit(1)
 
+    if options.pivot is not None:
+        tup = datetime.datetime.strptime(options.pivot, "%Y%m%dT%H:%M").timetuple()
+        ts = int(time.mktime(tup))
+        options.pivot = ts
+
+    if options.between is not None:
+        conv = []
+        for ts_str in options.between:
+            tup = datetime.datetime.strptime(ts_str, "%Y%m%d").timetuple()
+            ts = int(time.mktime(tup))
+            conv.append(ts)
+        options.between = {}
+        options.between['low'] = conv[0]
+        options.between['high'] = conv[1]
+
     if len(options.mergefiles) == 1:
         print "Error: please specify at least 2 csv files to merge."
         sys.exit(1)
@@ -415,15 +435,19 @@ def ts2d(xl):
     """
     return matplotlib.dates.epoch2num(xl)
 
-def plot_data(x_list, y_lists, y_errs, c_list, options):
+def plot_data(x_lists, y_lists, y_errs, c_list, options):
 
-    if len(x_list) == 0:
+    ok = False
+    for col in x_lists.keys():
+        if len(x_lists[col]) != 0:
+            ok = True
+    #if len(x_lists) == 0:
+    if not ok:
         print "WARNING: zero-length data set."
         print "WARNING: nothing to plot."
         return
 
     # Constants
-    textsize = 9
     left, width = 0.1, 0.8
     axescolor  = '#f6f6f6'  # the axes background color
 
@@ -434,7 +458,7 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
         rect1 = [left, 0.25, width, 0.6] #left, bottom, width, height
         rect2 = [left, 0.1,  width, 0.15]
 
-    fig = pylab.figure(figsize=(8,4), facecolor='white')
+    fig = pylab.figure(figsize=(4,4), facecolor='white')
     ax1  = fig.add_axes(rect1, axisbg=axescolor)  
     ax1.grid()
     if options.ylabel:
@@ -473,6 +497,8 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
 
     ymax=0
     split_column_names = map(split_column_name, options.columns)
+    x_min = None
+    x_max = None
     for i,(y_col,y_err_col) in enumerate(split_column_names):
         if options.verbose: print "Column:", y_col
 
@@ -489,16 +515,35 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
         else:
             y_err=y_errs[y_err_col]
 
-        ax1.axis([ts2d(min(x_list)),ts2d(max(x_list)),0,ymax])
+        if options.between:
+            x_max = options.between['high']
+        else:
+            if not x_max:
+                x_max = max(x_lists[y_col])
+            else:
+                x_max = max(x_max,max(x_lists[y_col]))
+
+        if options.between:
+            x_min = options.between['low']
+        else:
+            if not x_min:
+                x_min = min(x_lists[y_col])
+            else:
+                x_min = min(x_min,min(x_lists[y_col]))
+
+        if options.verbose: print x_min, x_max
+        ax1.axis([ts2d(x_min),ts2d(x_max),0,ymax])
 
         color = options.color_list[i%len(options.color_list)]
-        p, = ax1.plot_date(ts2d(x_list), y_lists[y_col], 
+        if options.verbose: print len(x_lists[y_col]), len(y_lists[y_col])
+        if options.verbose: print x_lists[y_col], y_lists[y_col]
+        p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
               xdate=True, ydate=False, marker='.', markersize=3,
               color=color, linewidth=(1 if y_err is None else 1.5),
               linestyle='', figure=fig, label=y_col)
 
         if y_err is not None:
-            ax1.errorbar(ts2d(x_list), y_lists[y_col], 
+            ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 
                         yerr=y_err, errorevery=4, 
                         ecolor=color, 
                         fmt=None,
@@ -510,7 +555,7 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
         ncols+=len(options.date_vline)
     if ncols > 1: # if == 1, causes divide-by-zero error in library.
         # NOTE: some versions support fontsize here, others don't
-        leg = ax1.legend(bbox_to_anchor=(0., 1.15, 1., .08), loc=1,
+        leg = ax1.legend(bbox_to_anchor=(0., 1.10, 1., .08), loc=1,
                ncol=ncols, mode="expand", 
                borderaxespad=0.) # , fontsize=10)
         # This always works.
@@ -520,14 +565,13 @@ def plot_data(x_list, y_lists, y_errs, c_list, options):
     ax = ax1     # by default, use the first axis
     if options.count_column:
         ax = ax2 # but if the count plot is enabled, use ax2
-        ax.plot_date(ts2d(x_list), c_list, linestyle='-', 
+        ax.plot_date(ts2d(x_lists[options.count_column]), c_list, linestyle='-', 
                      marker=None, drawstyle='steps-mid')
 
     # NOTE: when this is set earlier, somehow it's reset.
-    # TODO: may want to make the date format configurable.
-    xformatter = matplotlib.dates.DateFormatter("%b %d")
+    xformatter = matplotlib.dates.DateFormatter(options.datefmt)
     ax.xaxis.set_major_formatter(xformatter)
-    ax.xaxis.set_minor_formatter(xformatter)
+    #ax.xaxis.set_minor_formatter(xformatter)
 
     if options.output:
         pylab.savefig(options.output)
@@ -590,14 +634,48 @@ def merge_rows(row_list, options):
         merged dict.
     """
     ts=None
+    merge_result = []
     merge_dict = {}
-    for d in row_list:
-        if ts is None:
-            ts = d[options.timestamp]
-        else:
-            assert(ts == d[options.timestamp])
-        merge_dict.update(d)
-    return merge_dict
+    # NOTE: assume there are only two rows.
+    #if row_list[0][options.timestamp] == row_list[1][options.timestamp]:
+    #    merge_dict.update(row_list[0])
+    #    merge_dict.update(row_list[1])
+    #    return [ merge_dict ]
+
+    # NOTE: timestamps are not equal
+    if row_list[0][options.timestamp] < row_list[1][options.timestamp]:
+        r1 = row_list[0]
+        r2 = row_list[1]
+    else:
+        r1 = row_list[1]
+        r2 = row_list[0]
+
+    # update each with empty value of the missing columns from the other.
+    r1_keys = r1.keys()
+    r2_keys = r2.keys()
+    missing_from_r1 = set(r2_keys) - set(r1_keys)
+    missing_from_r2 = set(r1_keys) - set(r2_keys)
+    print missing_from_r1
+    print missing_from_r2
+
+    for k in missing_from_r1: r1[k] = None 
+    for k in missing_from_r2: r2[k] = None 
+
+    return [ r1, r2 ]
+
+   # for d in row_list:
+   #     if ts is None:
+   #         ts = d[options.timestamp]
+   #     else:
+   #         assert(ts == d[options.timestamp])
+   #     merge_dict.update(d)
+   # return merge_result
+
+def add_missing_fields(rec, all_header_names):
+    rec_keys = rec.keys()
+    missing_from_rec = set(all_header_names) - set(rec_keys)
+    for k in missing_from_rec: rec[k] = None 
+    return rec
 
 def merge_csvfiles(options):
 
@@ -625,26 +703,49 @@ def merge_csvfiles(options):
         records = read_csvfile(filename, True)
         records_list.append(records)
         all_header_names += records.fieldnames
-    all_header_names = sorted(set(all_header_names))
+    all_header_names = list(set(all_header_names)-set([options.timestamp]))
+    all_header_names = [options.timestamp] + sorted(all_header_names)
 
     # eliminate duplicate $header
     output_fd = open(options.output,'w')
     writer = csv.DictWriter(output_fd, all_header_names)
     writer.writeheader()
 
-    try:
-        # read all values until StopIteration is reached.
-        while True:
-            merge_list = [ records.next() for records in records_list ]
-            merge_dict = merge_rows(merge_list, options)
-            writer.writerow(merge_dict)
+    records1 = records_list[0]
+    records2 = records_list[1]
 
-    except StopIteration:
-        pass
+    read_records1 = True
+    read_records2 = True
+    # read all values until StopIteration is reached.
+    while True:
+        try:
+            if read_records1:
+                rec = records1.next()
+                add_missing_fields(rec, all_header_names)
+                writer.writerow(rec)
+        except StopIteration:
+            read_records1=False
+
+        try:
+            if read_records2:
+                rec = records2.next()
+                add_missing_fields(rec, all_header_names)
+                writer.writerow(rec)
+        except StopIteration:
+            read_records2=False
+            
+        if not read_records1 and not read_records2:
+            break
+
+        #merge_list = [ records.next() for records in records_list ]
+        #merge_dict_list = merge_rows(merge_list, options)
+        #for merge_dict in merge_dict_list:
+        #    writer.writerow(merge_dict)
 
     output_fd.close()
     return True
 
+SEC_IN_DAY=24*60*60
 def main(options):
     """
     The primary modes of operation are:
@@ -687,14 +788,18 @@ def main(options):
     records = read_csvfile(cache_file, True)
 
     # INITIALIZE
-    x_list  = []
+    #x_list  = []
+    x_lists = {}
     y_lists = {}
     y_errs  = {}
     c_list  = []
     split_column_names = map(split_column_name, options.columns)
     for y_col,y_err_col in split_column_names:
         y_lists[y_col] = []
+        x_lists[y_col] = []
         y_errs[y_err_col] = []
+    if options.count_column:
+        x_lists[options.count_column] = []
 
     # SORT DATA
     # TODO/NOTE: expects 'timestamp' values are sorted in ascending order
@@ -704,18 +809,39 @@ def main(options):
         try:
             # NOTE: First convert all values in this row.
             x = float(row[options.timestamp])
+            if options.pivot:
+                if x < options.pivot:
+                    d = options.pivot - x
+                    x = options.pivot + SEC_IN_DAY - ( d % SEC_IN_DAY )
+                else:
+                    raise Exception("hi, pleas provide a pivot greater than all ts")
+
+            if options.offset:
+                print "offset: %s" % options.offset
+                x = x + options.offset
+
             if options.count_column: c = float(row[options.count_column])
             y = {col:None for col,err in split_column_names}
             e = {err:None for col,err in split_column_names if err is not None}
             for y_col,y_err_col in split_column_names:
-                y[y_col] = float(row[y_col])
+                if row[y_col] != '': 
+                    y[y_col] = float(row[y_col])
                 if y_err_col: e[y_err_col] = float(row[y_err_col])
 
             # NOTE: only save values if all converted successfully
-            x_list.append(x)
-            if options.count_column: c_list.append(c)
+            # NOTE: only add x values to y rows that are non-''
             for y_col,y_err_col in split_column_names:
-                y_lists[y_col].append(y[y_col])
+                if row[y_col] != '': 
+                    x_lists[y_col].append(x)
+
+            #x_list.append(x)
+            if options.count_column: 
+                x_lists[options.count_column].append(x)
+                c_list.append(c)
+            for y_col,y_err_col in split_column_names:
+                if y[y_col] is not None:
+                    y_lists[y_col].append(y[y_col])
+                    if options.verbose: print y_col, y[y_col]
                 if y_err_col: y_errs[y_err_col].append(e[y_err_col])
 
         except ValueError:
@@ -724,7 +850,7 @@ def main(options):
             continue
 
     # VISUALIZE
-    plot_data(x_list, y_lists, y_errs, c_list, options)
+    plot_data(x_lists, y_lists, y_errs, c_list, options)
 
 if __name__ == "__main__":
     (options, args) = parse_args()
