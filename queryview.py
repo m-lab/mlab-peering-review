@@ -86,6 +86,7 @@ gflags.DEFINE_string("output", None,
 
 gflags.DEFINE_float("ymax", None, "YMAX on graph")
 
+gflags.DEFINE_string("xlabel", None, "X-Label on graph.")
 gflags.DEFINE_string("ylabel", None, "Y-Label on graph.")
 gflags.DEFINE_string("title",  None, "Title on graph.")
 gflags.DEFINE_list("between",  None, "Specify a time-window YYYYMMDD1,YYYYMMDD2 for graph.")
@@ -248,7 +249,7 @@ def bigquery_api(query_string, output_filename, options):
 
     except HttpError as err:
         logging.error('Error running query: %s', pprint.pprint(err.content))
-        print 'Error running query: %s' % pprint.pprint(status['status'])
+        print 'Error running query: %s' % pprint.pprint(err)
         sys.exit(1)
 
     except AccessTokenRefreshError:
@@ -333,14 +334,14 @@ def parse_args():
         sys.exit(1)
 
     if options.pivot is not None:
-        tup = datetime.datetime.strptime(options.pivot, "%Y%m%dT%H:%M").timetuple()
+        tup = time.strptime(options.pivot, "%Y%m%dT%H:%M")
         ts = int(time.mktime(tup))
         options.pivot = ts
 
     if options.between is not None:
         conv = []
         for ts_str in options.between:
-            tup = datetime.datetime.strptime(ts_str, "%Y%m%d").timetuple()
+            tup = time.strptime(ts_str, "%Y%m%dT%H:%M")
             ts = int(time.mktime(tup))
             conv.append(ts)
         options.between = {}
@@ -448,11 +449,11 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         return
 
     # Constants
-    left, width = 0.1, 0.8
+    left, width = 0.15, 0.8
     axescolor  = '#f6f6f6'  # the axes background color
 
     # NOTE: default size fills everything
-    rect1 = [left, 0.1, width, 0.75] #left, bottom, width, height
+    rect1 = [left, 0.1, width, 0.80] #left, bottom, width, height
     if options.count_column:
         # if the count image is included, then resize.
         rect1 = [left, 0.25, width, 0.6] #left, bottom, width, height
@@ -463,6 +464,8 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
     ax1.grid()
     if options.ylabel:
         ax1.set_ylabel(options.ylabel)
+    if options.xlabel:
+        ax1.set_xlabel(options.xlabel)
     if options.title:
         ax1.set_title(options.title)
 
@@ -538,9 +541,9 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         if options.verbose: print len(x_lists[y_col]), len(y_lists[y_col])
         if options.verbose: print x_lists[y_col], y_lists[y_col]
         p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
-              xdate=True, ydate=False, marker='.', markersize=3,
+              xdate=True, ydate=False, marker='.', markersize=4,
               color=color, linewidth=(1 if y_err is None else 1.5),
-              linestyle='', figure=fig, label=y_col)
+              linestyle='', figure=fig, label=("Over "+y_col.capitalize()))
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 
@@ -555,7 +558,8 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         ncols+=len(options.date_vline)
     if ncols > 1: # if == 1, causes divide-by-zero error in library.
         # NOTE: some versions support fontsize here, others don't
-        leg = ax1.legend(bbox_to_anchor=(0., 1.10, 1., .08), loc=1,
+        # left, bottom, width, height
+        leg = ax1.legend(bbox_to_anchor=(0., 0.91, 1., .09), loc=1,
                ncol=ncols, mode="expand", 
                borderaxespad=0.) # , fontsize=10)
         # This always works.
@@ -809,16 +813,17 @@ def main(options):
         try:
             # NOTE: First convert all values in this row.
             x = float(row[options.timestamp])
+
+            if options.offset:
+                if options.verbose: print "offset: %s" % options.offset
+                x = x + options.offset
+
             if options.pivot:
                 if x < options.pivot:
                     d = options.pivot - x
                     x = options.pivot + SEC_IN_DAY - ( d % SEC_IN_DAY )
                 else:
                     raise Exception("hi, pleas provide a pivot greater than all ts")
-
-            if options.offset:
-                print "offset: %s" % options.offset
-                x = x + options.offset
 
             if options.count_column: c = float(row[options.count_column])
             y = {col:None for col,err in split_column_names}
