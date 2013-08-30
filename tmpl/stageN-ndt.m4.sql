@@ -5,6 +5,7 @@ SELECT
     -- web100_log_entry.connection_spec.local_ip           AS server_ip,
     -- web100_log_entry.connection_spec.remote_ip          AS client_ip,
 
+    COUNT(web100_log_entry.log_time)                       as SITE_count,
     -- RATE
     AVG(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
