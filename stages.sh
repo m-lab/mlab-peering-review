@@ -199,7 +199,7 @@ function handle_stage3_query () {
 # NYC - cablevision, time warner, rcn, comcast, verizon
 # LAX - time warner, charter, cox, verizon, at&t 
 # ORD - comcast, rcn, wide open west?
-# NUQ - 
+# NUQ - comcast, -- astound, 
 # IAD - 
 # DFW - 
 

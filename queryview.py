@@ -443,7 +443,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
     for col in x_lists.keys():
         if len(x_lists[col]) != 0:
             ok = True
-    #if len(x_lists) == 0:
+
     if not ok:
         print "WARNING: zero-length data set."
         print "WARNING: nothing to plot."
@@ -486,6 +486,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         ax2.grid()
         ylocator = matplotlib.ticker.MaxNLocator(5, prune='both')
         ax2.yaxis.set_major_locator(ylocator)
+        for item in ax2.get_yticklabels(): item.set_fontsize('small')
     else:
         for label in ax1.get_xticklabels():
             #label.set_rotation(10)   
@@ -519,6 +520,8 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         else:
             y_err=y_errs[y_err_col]
 
+        if len(x_lists[y_col]) == 0: continue
+
         if options.between:
             x_max = options.between['high']
         else:
@@ -544,7 +547,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
               xdate=True, ydate=False, marker='.', markersize=4,
               color=color, linewidth=(1 if y_err is None else 1.5),
-              linestyle=options.style, figure=fig, label=("Over "+y_col.capitalize()))
+              linestyle=options.style, figure=fig, label=(y_col.capitalize()))
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 
@@ -561,7 +564,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         # NOTE: some versions support fontsize here, others don't
         # left, bottom, width, height
         leg = ax1.legend(bbox_to_anchor=(0., 0.91, 1., .09), loc=1,
-               ncol=ncols, mode="expand", 
+               ncol=2, mode="expand", 
                borderaxespad=0.) # , fontsize=10)
         # This always works.
         for t in leg.get_texts():
