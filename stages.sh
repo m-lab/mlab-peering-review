@@ -33,6 +33,15 @@ mkdir -p sql
 set -e
 set -x
 
+function lookup_ip () {
+    local host=$1
+    PYSCRIPT="import socket; print socket.gethostbyname('"$host"')"
+    ip=$( python -c "$PYSCRIPT" 2> /dev/null )
+    if test $? -eq 0 ; then
+        echo $ip
+    fi
+}
+
 function get_three_ips () {
     local service=$1
     local site=$2
@@ -185,14 +194,6 @@ function handle_stage3_query () {
 
 }
 
-function lookup_ip () {
-    local host=$1
-    PYSCRIPT="import socket; print socket.gethostbyname('"$host"')"
-    ip=$( python -c "$PYSCRIPT" 2> /dev/null )
-    if test $? -eq 0 ; then
-        echo $ip
-    fi
-}
 
 
 # NYC - cablevision, time warner, rcn, comcast, verizon
