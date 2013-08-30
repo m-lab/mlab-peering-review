@@ -86,6 +86,7 @@ gflags.DEFINE_string("output", None,
 
 gflags.DEFINE_float("ymax", None, "YMAX on graph")
 
+gflags.DEFINE_string("style", '', "line style.")
 gflags.DEFINE_string("xlabel", None, "X-Label on graph.")
 gflags.DEFINE_string("ylabel", None, "Y-Label on graph.")
 gflags.DEFINE_string("title",  None, "Title on graph.")
@@ -543,7 +544,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
               xdate=True, ydate=False, marker='.', markersize=4,
               color=color, linewidth=(1 if y_err is None else 1.5),
-              linestyle='', figure=fig, label=("Over "+y_col.capitalize()))
+              linestyle=options.style, figure=fig, label=("Over "+y_col.capitalize()))
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 
