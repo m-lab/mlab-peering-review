@@ -18,6 +18,7 @@ MANUAL_ASN_MAP = [
   (iptoint('65.19.96.0'), iptoint('65.19.127.255'), "AS6128 Cablevision Systems Corp."),
   (iptoint('64.15.0.0'), iptoint('64.15.15.255'), "AS6128 Cablevision Systems Corp."),
   (iptoint('10.0.0.0'), iptoint('10.255.255.255'), "AS000 Private Space."),
+  (iptoint('96.32.0.0'), iptoint('96.42.255.255'), "AS20115 Charter Communications"),
 ]
 
 AS2NAME={}
@@ -151,29 +152,51 @@ def asify_hop_array(hops, ases):
   print "\nFound %s rates in %s distinct AS hops" % (i_rates, hop_count)
   return as_hops
 
-def write_hop_array(filename, hops):
-    f = open(filename, 'w')
-    f.write("ts,as1,AS1,as2,AS2,rate\n")
+def write_hops(ts_file, avg_file, hops):
+    ts_f = open(ts_file, 'w')
+    ts_f.write("ts,as1,AS1,as2,AS2,rate\n")
+
+    avg_f = open(avg_file, 'w')
+    avg_f.write("as1,AS1,as2,AS2,count,avgrate\n")
+
     for ashop_a in hops.keys():
         if ashop_a not in AS2NAME: AS2NAME[ashop_a] = ashop_a
         for ashop_b in hops[ashop_a].keys():
             if ashop_b not in AS2NAME: AS2NAME[ashop_b] = ashop_b
-            #
-            # The number of results reported is a 
-            # little off because of fence-post 
-            # issue with trailing , in the list
-            #
+
+            sum_test = 0
+            avg_test = 0
+            cnt_test = len(hops[ashop_a][ashop_b]) 
+
+            # write each TS
             for (ts,bw) in hops[ashop_a][ashop_b]:
                 output = [ts, ashop_a, AS2NAME[ashop_a], ashop_b, AS2NAME[ashop_b], bw]
-                f.write(",".join(map(str,output)) + "\n")
-    f.close()
+                ts_f.write(",".join(map(str,output)) + "\n")
+                sum_test += bw
 
-isp = sys.argv[1]
-site= sys.argv[2]
+            # write AVG 
+            if cnt_test > 0:
+                avg_test = sum_test/cnt_test
 
-rate = rate_array("cache/stage1.%s.%s.sql.csv" % (isp,site))
+            output = [ashop_a, AS2NAME[ashop_a], ashop_b, AS2NAME[ashop_b], str(cnt_test), str(avg_test) ]
+            avg_f.write(",".join(output) + "\n")
+
+    ts_f.close()
+    avg_f.close()
+
+
+prefix = sys.argv[1]
+site = sys.argv[2]
+isp = sys.argv[3]
+
+stage1_filename = "cache/stage1.%s.%s.%s.sql.csv" % (prefix,site,isp)
+stage3_filename = "cache/stage3.%s.%s.%s.sql.csv" % (prefix,site,isp)
+ts_filename     = "cache/tshops.%s.%s.%s.csv" % (prefix,site,isp)
+avg_filename    = "cache/avghops.%s.%s.%s.csv" % (prefix,site,isp)
+
+
+rate = rate_array(stage1_filename)
 ases = as_array("GeoIPASNum2.csv", 0)
-hops = hop_array("cache/stage3.%s.%s.sql.csv" % (isp,site), rate)
+hops = hop_array(stage3_filename, rate)
 as_hops = asify_hop_array(hops, ases)
-write_hop_array("cache/tshops.%s.%s.csv" %(isp,site), as_hops)
-#print lookup_as(iptoint("8.8.8.8"), ases, None)
+write_hops(ts_filename, avg_filename, as_hops)
