@@ -82,9 +82,10 @@ def rate_array(filename, skip_header=True):
     client = s[2]
     index = site + "," + client
     bw = float(s[3])
+    ts = int(s[0])
     if index not in rate:
         rate[index] = []
-    rate[index].append(bw)
+    rate[index].append((ts,bw))
     total_rates += 1
   print "Found %s raw, client rates" % total_rates
   f.close()
@@ -151,32 +152,51 @@ def asify_hop_array(hops, ases):
   print "\nFound %s rates in %s distinct AS hops" % (i_rates, hop_count)
   return as_hops
 
-def write_hop_array(filename, hops):
-  f = open(filename, 'w')
-  f.write("as1,as2,count,rate\n")
-  for ashop_a in hops.keys():
-    for ashop_b in hops[ashop_a].keys():
-      #
-      # The number of results reported is a 
-      # little off because of fence-post 
-      # issue with trailing , in the list
-      #
-      cnt_test = len(hops[ashop_a][ashop_b]) 
-      avg_test = 0
-      if cnt_test > 0:
-        avg_test = sum(hops[ashop_a][ashop_b])/cnt_test
-      if ashop_a not in AS2NAME: AS2NAME[ashop_a] = ashop_a
-      if ashop_b not in AS2NAME: AS2NAME[ashop_b] = ashop_b
-      output = [ashop_a, AS2NAME[ashop_a], ashop_b, AS2NAME[ashop_b], str(cnt_test), str(avg_test) ]
-      f.write(",".join(output) + "\n")
-  f.close()
+def write_hops(ts_file, avg_file, hops):
+    ts_f = open(ts_file, 'w')
+    ts_f.write("ts,as1,AS1,as2,AS2,rate\n")
 
-isp = sys.argv[1]
-site= sys.argv[2]
+    avg_f = open(avg_file, 'w')
+    avg_f.write("as1,AS1,as2,AS2,count,avgrate\n")
 
-rate = rate_array("cache/stage1.%s.%s.sql.csv" % (isp,site))
+    for ashop_a in hops.keys():
+        if ashop_a not in AS2NAME: AS2NAME[ashop_a] = ashop_a
+        for ashop_b in hops[ashop_a].keys():
+            if ashop_b not in AS2NAME: AS2NAME[ashop_b] = ashop_b
+
+            sum_test = 0
+            avg_test = 0
+            cnt_test = len(hops[ashop_a][ashop_b]) 
+
+            # write each TS
+            for (ts,bw) in hops[ashop_a][ashop_b]:
+                output = [ts, ashop_a, AS2NAME[ashop_a], ashop_b, AS2NAME[ashop_b], bw]
+                ts_f.write(",".join(map(str,output)) + "\n")
+                sum_test += bw
+
+            # write AVG 
+            if cnt_test > 0:
+                avg_test = sum_test/cnt_test
+
+            output = [ashop_a, AS2NAME[ashop_a], ashop_b, AS2NAME[ashop_b], str(cnt_test), str(avg_test) ]
+            avg_f.write(",".join(output) + "\n")
+
+    ts_f.close()
+    avg_f.close()
+
+
+prefix = sys.argv[1]
+site = sys.argv[2]
+isp = sys.argv[3]
+
+stage1_filename = "cache/stage1.%s.%s.%s.sql.csv" % (prefix,site,isp)
+stage3_filename = "cache/stage3.%s.%s.%s.sql.csv" % (prefix,site,isp)
+ts_filename     = "cache/tshops.%s.%s.%s.csv" % (prefix,site,isp)
+avg_filename    = "cache/avghops.%s.%s.%s.csv" % (prefix,site,isp)
+
+
+rate = rate_array(stage1_filename)
 ases = as_array("GeoIPASNum2.csv", 0)
-hops = hop_array("cache/stage3.%s.%s.sql.csv" % (isp,site), rate)
+hops = hop_array(stage3_filename, rate)
 as_hops = asify_hop_array(hops, ases)
-write_hop_array("cache/hops.%s.%s.csv" %(isp,site), as_hops)
-#print lookup_as(iptoint("8.8.8.8"), ases, None)
+write_hops(ts_filename, avg_filename, as_hops)
