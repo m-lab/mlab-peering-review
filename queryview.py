@@ -98,6 +98,9 @@ gflags.DEFINE_string("datefmt",  "%b %d", "Specify a time format for x-axis")
 gflags.DEFINE_bool("plot", True,
                    "Enable/disable plotting of the resulting data.")
 
+gflags.DEFINE_bool("checkdeps", False,
+                   "Simple check for dependencies and exit.")
+
 gflags.DEFINE_bool("verbose", False,
                    "Verbose mode: print extra details.",
                    short_name='v')
@@ -325,6 +328,11 @@ def parse_args():
 
     logging.basicConfig(format = '[%(asctime)s] %(levelname)s: %(message)s',
                         level = level)
+
+    if options.checkdeps:
+        # NOTE: if we've made it this far, then it's a pass
+        print "%s dependenices PASS" % sys.argv[0]
+        sys.exit(0)
 
     if (options.query is None and
         options.csvfile is None and

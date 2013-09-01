@@ -1,83 +1,55 @@
 #!/usr/bin/env bash
 
+PREFIX=${1:?HELP: Prefix name, such as city.}
+SITE=${2:?HELP: Please provide an M-Lab site name, i.e. lga01, lax01, etc.}
+ISPLIST=${3:?HELP: Please provide a short ISP name, i.e. warner, comcast, verizon}
 
+mkdir -p tmp
 set -x
-for ISP in cablevision warner comcast verizon ; do
-#for ISP in verizon ; do
-    #./ts_hops.py $ISP $SITE
-    #./ts_hops.py $ISP $SITE
+set -e
+for ISP in $ISPLIST ; do
+
+    RAWSAMPLES=cache/stage1.$PREFIX.$SITE.$ISP.sql.csv 
+    TS_HOPS=cache/tshops.$PREFIX.$SITE.$ISP.csv 
+
+    TMPFILE_RAW=tmp/raw.$PREFIX.$SITE.$ISP.csv
+    TMPFILE_TS=tmp/ts.$PREFIX.$SITE.$ISP.csv
+
+    cat $RAWSAMPLES | sort -n > $TMPFILE_RAW
+    sed -e 's/raw_download_rate/'$SITE'/g' -i '' $TMPFILE_RAW
+
+    TZ=UTC ./queryview.py --csv $TMPFILE_RAW \
+            --timestamp day_timestamp \
+            -l $SITE -C blue \
+            --between 20130901T06:00,20130902T06:00 \
+            --output graphs/tsraw.$PREFIX.$SITE.$ISP.png \
+            --pivot 20130901T06:00 \
+            --datefmt "%H" \
+            --offset 72000 \
+            --title "RAW $SITE to $ISP Download Rates" \
+            --ylabel "Mbps" \
+            --xlabel "Eastern Time (UTC-4)" \
+            --ymax 68
 
     # this will sort the paths with the largest number of samples
     # just take the top one for now that's not part of a private trace.
-    HIGHEST=`grepcount.sh $SITE $ISP | sort -nr | grep -vE "Private|AS000" | head -1 | awk '{print $2}'`
-    grep -E "as1|$HIGHEST" cache/tshops.$ISP.lga01.csv | sort -n > internap2$ISP.csv
+    HIGHEST=`./grepcount.sh $PREFIX $SITE $ISP | sort -nr | grep -vE "Private|AS000" | head -1 | awk '{print $2}'`
+    grep -E "as1|$HIGHEST" $TS_HOPS | sort -n > $TMPFILE_TS
 
-    # SAMPLES with PATHS
-    if test "$ISP" = "cablevision" ; then
-        grep -E "as1|Private,AS6128" cache/tshops.$ISP.lga01.csv | sort -n > internap2$ISP.csv
-        grep -E "as1|PSI,AS6128"     cache/tshops.$ISP.lga02.csv | sort -n > cogent2$ISP.csv
-    elif test "$ISP" = "comcast" ; then
-        grep -E "as1|Voxel,AS13789"  cache/tshops.$ISP.lga01.csv | sort -n > internap2$ISP.csv
-        grep -E "as1|PSI,AS7922"     cache/tshops.$ISP.lga02.csv | sort -n > cogent2$ISP.csv
-    elif test "$ISP" = "warner" ; then
-        grep -E "as1|Voxel,AS23393"  cache/tshops.$ISP.lga01.csv | sort -n > internap2$ISP.csv
-        grep -E "as1|PSI,AS7843"     cache/tshops.$ISP.lga02.csv | sort -n > cogent2$ISP.csv
-    elif test "$ISP" = "verizon" ; then
-        grep -E "as1|nLayer,AS701"   cache/tshops.$ISP.lga01.csv | sort -n > internap2$ISP.csv
-        grep -E "as1|PSI,AS701"      cache/tshops.$ISP.lga02.csv | sort -n > cogent2$ISP.csv
-    fi
+    sed -e 's/rate/'$SITE'/g' -i '' $TMPFILE_TS
 
-    # RAW SAMPLES
-    cat cache/stage1.$ISP.lga01.sql.csv | sort -n > internap2$ISP.2.csv
-    cat cache/stage1.$ISP.lga02.sql.csv | sort -n > cogent2$ISP.2.csv
-    sed -e 's/raw_download_rate/internap/g' -i'' internap2$ISP.2.csv 
-    sed -e 's/raw_download_rate/cogent/g' -i'' cogent2$ISP.2.csv
-
-    ./queryview.py --merge internap2$ISP.2.csv \
-                   --merge cogent2$ISP.2.csv \
-                   --output out.2.csv --timestamp day_timestamp
-    sort -n out.2.csv > out1.2.csv 
-
-    ./queryview.py --timestamp day_timestamp \
-            -l internap  -C blue \
-            -l cogent -C red \
-            --csv out1.2.csv --between 20130830T06:00,20130831T06:00 \
-            --output graphs/$ISP.2.vc.png \
-            --pivot 20130830T06:00 \
+    TZ=UTC ./queryview.py --csv $TMPFILE_TS \
+            --timestamp ts \
+            -l $SITE -C blue \
+            --between 20130901T06:00,20130902T06:00 \
+            --output graphs/tshops.$PREFIX.$SITE.$ISP.png \
+            --pivot 20130901T06:00 \
             --datefmt "%H" \
             --offset 72000 \
-            --title "${ISP^} Download Rates" \
+            --title "HOPS $HIGHEST $SITE to $ISP" \
             --ylabel "Mbps" \
             --xlabel "Eastern Time (UTC-4)" \
             --ymax 68
 
-
-    # SAMPLES WITH PATHS
-    sed -e 's/rate/internap/g' -i'' internap2$ISP.csv 
-    sed -e 's/rate/cogent/g' -i'' cogent2$ISP.csv
-
-    ./queryview.py --merge  internap2$ISP.csv \
-                   --merge  cogent2$ISP.csv \
-                   --output out.csv --timestamp ts
-
-    sort -n out.csv > out1.csv 
-
-    ./queryview.py --timestamp ts \
-            -l internap -C blue \
-            -l cogent   -C red \
-            --csv out1.csv --between 20130830T06:00,20130831T06:00 \
-            --output graphs/$ISP.vc.png \
-            --pivot 20130830T06:00 \
-            --datefmt "%H" \
-            --offset 72000 \
-            --title "${ISP^} Download Rates" \
-            --ylabel "Mbps" \
-            --xlabel "Eastern Time (UTC-4)" \
-            --ymax 68
-            #--ymax 25
-            #--pivot 20130829T08:00 \
-
-
-    
 done
 

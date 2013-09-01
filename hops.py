@@ -29,6 +29,12 @@ def get_asno(as_raw):
     AS2NAME[as_no] = as_no.strip()
     if len(as_split) > 1:
         AS2NAME[as_no] = as_split[1].strip()
+
+    # Manually translate some AS shortnames
+    AS2NAME[as_no] = AS2NAME[as_no].replace("MCI",   "Verizon")
+    AS2NAME[as_no] = AS2NAME[as_no].replace("Voxel", "Internap")
+    AS2NAME[as_no] = AS2NAME[as_no].replace("Time",  "TimeWarner")
+
     return as_no
 
 def as_array(filename,skip_header=True):
@@ -193,7 +199,6 @@ stage1_filename = "cache/stage1.%s.%s.%s.sql.csv" % (prefix,site,isp)
 stage3_filename = "cache/stage3.%s.%s.%s.sql.csv" % (prefix,site,isp)
 ts_filename     = "cache/tshops.%s.%s.%s.csv" % (prefix,site,isp)
 avg_filename    = "cache/avghops.%s.%s.%s.csv" % (prefix,site,isp)
-
 
 rate = rate_array(stage1_filename)
 ases = as_array("GeoIPASNum2.csv", 0)

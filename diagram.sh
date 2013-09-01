@@ -1,12 +1,24 @@
 #!/bin/bash
 
 export LC_ALL=C
-cat <<EOF 
+
+PREFIX=${1:?HELP: Prefix name, such as city.}
+SITE=${2:?HELP: Please provide an M-Lab site name, i.e. lga01, lax01, etc.}
+ISP=${3:?HELP: Please provide a short ISP name, i.e. warner, comcast, verizon}
+
+GVFILE=input/dot.$PREFIX.$SITE.$ISP.gv
+GVPNG=graphs/dot.$PREFIX.$SITE.$ISP.png
+HOPSFILE=cache/avghops.$PREFIX.$SITE.$ISP.csv
+
+set -x
+
+rm -f $GVFILE
+cat <<EOF > $GVFILE
 digraph TrafficLights {
 overlap=false;
 EOF
-HOPSFILE=cache/hops.$1.$2.csv
-cat $HOPSFILE | sed -e 's/MCI/Verizon/g' | sed -e 's/Voxel/Internap/g' | grep -v as1 | awk -F, '{print $1,$2,$5}' | \
+
+cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$5}' | \
    sort | uniq | \
    while read as1 AS1 count ; do
       if test -z "$AS1" ; then
@@ -15,27 +27,26 @@ cat $HOPSFILE | sed -e 's/MCI/Verizon/g' | sed -e 's/Voxel/Internap/g' | grep -v
       if test $count -gt 200 ; then
           printf "$as1[label=\"$AS1\"];\n"
       fi
-   done
-cat $HOPSFILE | sed -e 's/MCI/Verizon/g' | sed -e 's/Voxel/Internap/g' | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
+   done >> $GVFILE
+cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
    while read as1 AS1 as2 AS2 count rate ; do
       if test "$as1" = "$as2" ; then continue ; fi
       if test $count -gt 200 ; then
           printf "$as1->$as2 [ label=\"%0.2f\\\\n%d\\\\n%s\"];\n" "$rate" "$count" "$as2"
       fi
-   done
+   done >> $GVFILE
 
 if test "$2" = "lga01" ; then
     site=Internap
-else
+elif test "$2" = "lga02" ; then
     site=Cogent
 fi
 
-cat <<EOF 
+cat <<EOF  >> $GVFILE
 overlap=false;
-label="NY $site to $1";
+label="$PREFIX $SITE to $ISP";
 fontsize=12;
 }
 EOF
 
-# dot -Tpng output.gv > output.png 
-
+dot -Tpng $GVFILE -o $GVPNG
