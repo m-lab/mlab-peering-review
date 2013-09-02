@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
-if ! test -f .setup_passed ; then
-    ./setup.sh 
+_=${SCRIPT_ROOT:?ERROR: set SCRIPT_ROOT before running this script.}
+
+if ! test -f $SCRIPT_ROOT/.setup_passed ; then
+    $SCRIPT_ROOT/setup.sh 
 fi
 
 mkdir -p graphs
 mkdir -p cache
 mkdir -p input
 mkdir -p sql
+mkdir -p tmp
 
 set -x
 set -e
@@ -83,7 +86,7 @@ function handle_stage1_query () {
             tmpl/stage1-ndt.m4.sql > sql/$sqlname
     fi
 
-    QV=./queryview.py 
+    QV=$SCRIPT_ROOT/queryview.py 
     $QV --query sql/$sqlname --noplot
 
 }
@@ -135,7 +138,7 @@ function handle_stage2_query () {
             tmpl/stage2-ndt.m4.sql > sql/$sqlname
     fi
 
-    QV=./queryview.py 
+    QV=$SCRIPT_ROOT/queryview.py 
     $QV -v --query sql/$sqlname --noplot 
 
 }
@@ -183,7 +186,7 @@ function handle_stage3_query () {
             tmpl/stage3-ndt.m4.sql > sql/$sqlname
     fi
 
-    QV=./queryview.py 
+    QV=$SCRIPT_ROOT/queryview.py 
     $QV -v --query sql/$sqlname --noplot 
 
 }
@@ -208,11 +211,11 @@ for ISP in $ISPLIST ; do
 
     if test $stage1 -nt $tshops || test $stage3 -nt $tshops ; then
         # NOTE: this takes the longest, so only run if necessary.
-        ./hops.py    $PREFIX $SITE $ISP
+        $SCRIPT_ROOT/support/hops.py    $PREFIX $SITE $ISP
     fi
 
-    ./diagram.sh $PREFIX $SITE $ISP 
+    $SCRIPT_ROOT/support/diagram.sh $PREFIX $SITE $ISP 
 
-    ./plots.sh   $PREFIX $SITE $ISP
+    $SCRIPT_ROOT/support/plots.sh   $PREFIX $SITE $ISP
 
 done

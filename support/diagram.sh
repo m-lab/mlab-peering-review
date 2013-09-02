@@ -18,22 +18,18 @@ digraph TrafficLights {
 overlap=false;
 EOF
 
-cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$5}' | \
+cat $HOPSFILE | grep -vE "as1|Private" | awk -F, '{print $1,$2,$3,$5}' | \
    sort | uniq | \
-   while read as1 AS1 count ; do
-      if test -z "$AS1" ; then
-         AS1=$as1
-      fi
-      if test $count -gt 200 ; then
-          printf "$as1[label=\"$AS1\"];\n"
-      fi
+   while read as1 AS1 as2 count ; do
+      if test "$as1" = "$as2" ; then continue ; fi
+      if test $count -lt 200 ; then continue ; fi
+      printf "$as1[label=\"$AS1\"];\n"
    done >> $GVFILE
-cat $HOPSFILE | grep -v as1 | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
+cat $HOPSFILE | grep -vE "as1|Private" | awk -F, '{print $1,$2,$3,$4,$5,$6}' | \
    while read as1 AS1 as2 AS2 count rate ; do
       if test "$as1" = "$as2" ; then continue ; fi
-      if test $count -gt 200 ; then
-          printf "$as1->$as2 [ label=\"%0.2f\\\\n%d\\\\n%s\"];\n" "$rate" "$count" "$as2"
-      fi
+      if test $count -lt 200 ; then continue ; fi
+      printf "$as1->$as2 [ label=\"%0.2f\\\\n%d\\\\n%s\"];\n" "$rate" "$count" "$as2"
    done >> $GVFILE
 
 if test "$2" = "lga01" ; then
@@ -49,4 +45,5 @@ fontsize=12;
 }
 EOF
 
+rm -f $GVPNG
 dot -Tpng $GVFILE -o $GVPNG

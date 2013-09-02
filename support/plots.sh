@@ -18,12 +18,12 @@ for ISP in $ISPLIST ; do
     cat $RAWSAMPLES | sort -n > $TMPFILE_RAW
     sed -e 's/raw_download_rate/'$SITE'/g' -i '' $TMPFILE_RAW
 
-    TZ=UTC ./queryview.py --csv $TMPFILE_RAW \
+    TZ=UTC $SCRIPT_ROOT/queryview.py --csv $TMPFILE_RAW \
             --timestamp day_timestamp \
             -l $SITE -C blue \
-            --between 20130901T06:00,20130902T06:00 \
+            --between 20130902T06:00,20130903T06:00 \
             --output graphs/tsraw.$PREFIX.$SITE.$ISP.png \
-            --pivot 20130901T06:00 \
+            --pivot 20130902T06:00 \
             --datefmt "%H" \
             --offset 72000 \
             --title "RAW $SITE to $ISP Download Rates" \
@@ -33,17 +33,19 @@ for ISP in $ISPLIST ; do
 
     # this will sort the paths with the largest number of samples
     # just take the top one for now that's not part of a private trace.
-    HIGHEST=`./grepcount.sh $PREFIX $SITE $ISP | sort -nr | grep -vE "Private|AS000" | head -1 | awk '{print $2}'`
+    HIGHEST=`$SCRIPT_ROOT/support/grepcount.sh $PREFIX $SITE $ISP | \
+              sort -nr | grep -vE "Private|AS000" | head -1 | awk '{print $2}'`
+
     grep -E "as1|$HIGHEST" $TS_HOPS | sort -n > $TMPFILE_TS
 
     sed -e 's/rate/'$SITE'/g' -i '' $TMPFILE_TS
 
-    TZ=UTC ./queryview.py --csv $TMPFILE_TS \
+    TZ=UTC $SCRIPT_ROOT/queryview.py --csv $TMPFILE_TS \
             --timestamp ts \
             -l $SITE -C blue \
-            --between 20130901T06:00,20130902T06:00 \
+            --between 20130902T06:00,20130903T06:00 \
             --output graphs/tshops.$PREFIX.$SITE.$ISP.png \
-            --pivot 20130901T06:00 \
+            --pivot 20130902T06:00 \
             --datefmt "%H" \
             --offset 72000 \
             --title "HOPS $HIGHEST $SITE to $ISP" \
