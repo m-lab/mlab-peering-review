@@ -19,6 +19,8 @@ MANUAL_ASN_MAP = [
   (iptoint('64.15.0.0'), iptoint('64.15.15.255'), "AS6128 Cablevision Systems Corp."),
   (iptoint('10.0.0.0'), iptoint('10.255.255.255'), "AS000 Private Space."),
   (iptoint('96.32.0.0'), iptoint('96.42.255.255'), "AS20115 Charter Communications"),
+  (iptoint('100.0.0.0'), iptoint('100.41.255.255'), "AS19262 Verizon Online"),
+  (iptoint('67.14.0.0'), iptoint('67.14.159.255'), "AS3909 Qwest Communications Company"),
 ]
 
 AS2NAME={}
