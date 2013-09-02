@@ -48,8 +48,8 @@ sort -n $outfile.csv > $outfile.2.csv
             -l $SITE1.$ISP1 -C $COLOR1 \
             -l $SITE2.$ISP2 -C $COLOR2 \
             --csv $outfile.2.csv \
-            --between 20130901T06:00,20130902T06:00 \
-            --pivot   20130901T06:00 \
+            --between 20130902T06:00,20130903T06:00 \
+            --pivot   20130902T06:00 \
             --output graphs/compare.$PREFIX.$SITE.$ISP.png \
             --datefmt "%H" \
             --offset 72000 \
