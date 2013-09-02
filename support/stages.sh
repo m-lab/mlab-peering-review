@@ -5,6 +5,7 @@ _=${SCRIPT_ROOT:?ERROR: set SCRIPT_ROOT before running this script.}
 if ! test -f $SCRIPT_ROOT/.setup_passed ; then
     $SCRIPT_ROOT/setup.sh 
 fi
+IP2ASNFILE=GeoIPASNum2
 
 mkdir -p graphs
 mkdir -p cache
