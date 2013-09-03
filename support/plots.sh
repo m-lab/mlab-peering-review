@@ -15,8 +15,8 @@ for ISP in $ISPLIST ; do
     TMPFILE_RAW=tmp/raw.$PREFIX.$SITE.$ISP.csv
     TMPFILE_TS=tmp/ts.$PREFIX.$SITE.$ISP.csv
 
-    cat $RAWSAMPLES | sort -n > $TMPFILE_RAW
-    sed -e 's/raw_download_rate/'$SITE'/g' -i '' $TMPFILE_RAW
+    # NOTE: alter header
+    cat $RAWSAMPLES | sed -e 's/raw_download_rate/'$SITE'/g' | sort -n > $TMPFILE_RAW
 
     TZ=UTC $SCRIPT_ROOT/queryview.py --csv $TMPFILE_RAW \
             --timestamp day_timestamp \
@@ -36,9 +36,8 @@ for ISP in $ISPLIST ; do
     HIGHEST=`$SCRIPT_ROOT/support/grepcount.sh $PREFIX $SITE $ISP | \
               sort -nr | grep -vE "Private|AS000" | head -1 | awk '{print $2}'`
 
-    grep -E "as1|$HIGHEST" $TS_HOPS | sort -n > $TMPFILE_TS
-
-    sed -e 's/rate/'$SITE'/g' -i '' $TMPFILE_TS
+    # NOTE: pull out only hops that pass through 'HIGHEST' and alter csv header
+    grep -E "as1|$HIGHEST" $TS_HOPS | sed -e 's/rate/'$SITE'/g' | sort -n > $TMPFILE_TS
 
     TZ=UTC $SCRIPT_ROOT/queryview.py --csv $TMPFILE_TS \
             --timestamp ts \
