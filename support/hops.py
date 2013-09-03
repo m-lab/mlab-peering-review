@@ -7,11 +7,70 @@ import sys
 #
 # from the web!
 #
-def iptoint(ip):
-    return int(socket.inet_aton(ip).encode('hex'),16)
+def iptoint(ip_str):
+    """Turn the given IP string into an integer for comparison.
 
-def inttoip(ip):
-    return socket.inet_ntoa(hex(ip)[2:].zfill(8).decode('hex'))
+    Args:
+       ip_str: A string, the IP ip_str.
+
+    Returns:
+       The IP ip_str as an integer.
+
+    Raises:
+       AddressValueError: if ip_str isn't a valid IPv4 Address.
+
+  """
+    octets = ip_str.split('.')
+    if len(octets) != 4:
+        raise Exception("Not enough octets")
+
+    packed_ip = 0
+    for oc in octets:
+        try:
+            packed_ip = (packed_ip << 8) | parse_octet(oc)
+        except ValueError:
+            raise Exception("Address value error "+ip_str)
+    return packed_ip
+
+def parse_octet(octet_str):
+    """Convert a decimal octet into an integer.
+
+    Args:
+       octet_str: A string, the number to parse.
+
+    Returns:
+       The octet as an integer.
+
+    Raises:
+       ValueError: if the octet isn't strictly a decimal from [0..255].
+
+    """
+    # Whitelist the characters, since int() allows a lot of bizarre stuff.
+    DECIMAL_DIGITS = frozenset('0123456789')
+    if not DECIMAL_DIGITS.issuperset(octet_str):
+        raise ValueError
+    octet_int = int(octet_str, 10)
+    # Disallow leading zeroes, because no clear standard exists on
+    # whether these should be interpreted as decimal or octal.
+    if octet_int > 255 or (octet_str[0] == '0' and len(octet_str) > 1):
+        raise ValueError
+    return octet_int
+
+def inttoip(ip_int):
+    """Turns a 32-bit integer into dotted decimal notation.
+
+    Args:
+        ip_int: An integer, the IP address.
+
+    Returns:
+        The IP address as a string in dotted decimal notation.
+
+    """
+    octets = []
+    for _ in xrange(4):
+        octets.insert(0, str(ip_int & 0xFF))
+        ip_int >>= 8
+    return '.'.join(octets)
 
 MANUAL_ASN_MAP = [
   (iptoint('67.59.224.1'), iptoint('67.59.255.254'), "AS6128 Cablevision Systems Corp."),
