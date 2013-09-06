@@ -76,6 +76,9 @@ gflags.DEFINE_multistring("date_vline", [],
 gflags.DEFINE_multistring("color_list", [],
                      "Colors are applied to lines in order specified.",
                      short_name='C')
+gflags.DEFINE_multistring("marker_list", ['.'],
+                     "Marker styles applied to lines in order specified.",
+                     short_name='M')
 
 gflags.DEFINE_multistring("define_values", [],
                      ("Pseudo macros translate SQL query by replacing "+
@@ -468,7 +471,7 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         rect1 = [left, 0.25, width, 0.6] #left, bottom, width, height
         rect2 = [left, 0.1,  width, 0.15]
 
-    fig = pylab.figure(figsize=(4,4), facecolor='white')
+    fig = pylab.figure(figsize=(6,6), facecolor='white')
     ax1  = fig.add_axes(rect1, axisbg=axescolor)  
     ax1.grid()
     if options.ylabel:
@@ -550,12 +553,15 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         ax1.axis([ts2d(x_min),ts2d(x_max),0,ymax])
 
         color = options.color_list[i%len(options.color_list)]
+        marker = options.marker_list[i%len(options.marker_list)]
         if options.verbose: print len(x_lists[y_col]), len(y_lists[y_col])
         if options.verbose: print x_lists[y_col], y_lists[y_col]
         p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
-              xdate=True, ydate=False, marker='.', markersize=4,
+              xdate=True, ydate=False, marker=marker, markersize=4,
+              #markerfacecolor='none', 
+              #markeredgecolor=color,
               color=color, linewidth=(1 if y_err is None else 1.5),
-              linestyle=options.style, figure=fig, label=(y_col.capitalize()))
+              linestyle=options.style, figure=fig, label=y_col)
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 
@@ -572,8 +578,8 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         # NOTE: some versions support fontsize here, others don't
         # left, bottom, width, height
         leg = ax1.legend(bbox_to_anchor=(0., 0.91, 1., .09), loc=1,
-               ncol=2, mode="expand", 
-               borderaxespad=0.) # , fontsize=10)
+               borderaxespad=0.) #, fontsize=10, ncol=1)
+               #mode="expand", 
         # This always works.
         for t in leg.get_texts():
             t.set_fontsize('small')
