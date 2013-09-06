@@ -30,16 +30,17 @@ function get_three_ips () {
 }
 
 function handle_stageN_query () {
-    local ispname=$1
+    local prefix=$1
     local site=$2
+    local ispname=$3
     local stage=stageN
     local iplist=
 
     iplist=$( get_three_ips ndt.iupui $site )
 
-    filtername=input/stage1.$ispname.$site.input 
-    sqlname=$stage.$ispname.$site.sql
-    rm -f $filtername
+    filtername=input/stage1.$prefix.$site.$isp.input 
+    sqlname=$stage.$prefix.$site.$ispname.sql
+    #rm -f $filtername
 
     if test "$ispname" = "cox" ; then
         ispname=" cox"
@@ -62,15 +63,15 @@ function handle_stageN_query () {
             done | tail -1500 > $filtername
     fi
 
-    if ! test -f sql/$sqlname ; then
+    if ! test -f sql/$sqlname || test $filtername -nt sql/$sqlname ; then
         # TODO: set literal ts to first day of next month, so that the ts is always greater than DATETABLE dates.
-        PTS=`TZ=UTC python -c 'import time; print int(time.mktime(time.strptime("20130901T00:00", "%Y%m%dT%H:%M")))'`
+        PTS=`TZ=UTC python -c 'import time; print int(time.mktime(time.strptime("20130901T20:00", "%Y%m%dT%H:%M")))'`
         m4 -DISP_FILTER_FILENAME=$filtername \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="$iplist" \
            -DSITE=$site \
            -DPIVOT_TS=$PTS \
-           -DOFFSET=72000 \
+           -DOFFSET=0 \
             tmpl/stageN-ndt.m4.sql > sql/$sqlname
     fi
 
@@ -79,37 +80,49 @@ function handle_stageN_query () {
 }
 
 mkdir -p sorted
+mkdir -p graphs
+mkdir -p cache
+mkdir -p input
+mkdir -p sql
+mkdir -p tmp
 
+PREFIX=${1:?HELP: Prefix name, such as city.}
+SITE1=${2:?HELP: Please provide an M-Lab site name, i.e. lga01, lax01, etc.}
+ISPLIST=${3:?HELP: Please provide a short ISP name, i.e. warner, comcast, verizon}
+
+export TZ=UTC
 set -x
 for ISP in $ISPLIST ; do
 
-    handle_stageN_query $ISP $SITE1
-    handle_stageN_query $ISP $SITE2
+    handle_stageN_query $PREFIX $SITE1 $ISP
+    #handle_stageN_query $ISP $SITE2
 
-    OUTPUT1=sorted/${SITE1}2${ISP}.csv
-    OUTPUT2=sorted/${SITE2}2${ISP}.csv
+    OUTPUT1=sorted/sorted.${PREFIX}.${SITE1}.${ISP}.csv
+    #OUTPUT2=sorted/${SITE2}2${ISP}.csv
 
-    sed -e 's/SITE/'${SITE1}'/g' cache/stageN.$ISP.$SITE1.sql.csv | sort -g > $OUTPUT1
-    sed -e 's/SITE/'${SITE2}'/g' cache/stageN.$ISP.$SITE2.sql.csv | sort -g > $OUTPUT2
+    sed -e 's/SITE/'${SITE1}'/g' cache/stageN.${PREFIX}.${SITE1}.${ISP}.sql.csv | sort -g > $OUTPUT1
+    #sed -e 's/SITE/'${SITE2}'/g' cache/stageN.$ISP.$SITE2.sql.csv | sort -g > $OUTPUT2
 
-    ./queryview.py --merge $OUTPUT1 \
-                   --merge $OUTPUT2 \
-                   --output out.N.csv --timestamp ts
-    sort -g out.N.csv > out1.N.csv
+    #./queryview.py --merge $OUTPUT1 \
+    #               --merge $OUTPUT2 \
+    #               --output out.N.csv --timestamp ts
+    #sort -g out.N.csv > out1.N.csv
 
-    ./queryview.py --timestamp ts \
-            -l ${SITE1}_avg -C green \
-            -l ${SITE2}_avg -C orange \
+    $SCRIPT_ROOT/queryview.py --timestamp ts \
+            -l ${SITE1}_q25 -C violet \
             -l ${SITE1}_median -C blue \
-            -l ${SITE1}_q90 -C lightblue \
-            -l ${SITE2}_median -C red \
-            -l ${SITE2}_q90 -C pink \
+            -l ${SITE1}_q60 -C green \
+            -l ${SITE1}_q70 -C goldenrod \
+            -l ${SITE1}_q80 -C orangered \
+            -l ${SITE1}_q90 -C darkred \
+            --count_column ${SITE1}_count \
             --style '-' \
-            --csv out1.N.csv \
-            --output graphs/n.$ISP.${SITE1}.${SITE2}.png \
+            --csv $OUTPUT1 \
+            --output graphs/n.${PREFIX}.${SITE1}.${ISP}.png \
             --datefmt "%H" \
             --title "${ISP} Download Rates" \
             --ylabel "Mbps" \
+            --offset $(( 60*60*8 )) \
             --xlabel "Eastern Time (UTC-4)" \
             --ymax 68
 
