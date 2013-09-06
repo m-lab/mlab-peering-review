@@ -176,6 +176,9 @@ def hop_array(filename, rates, skip_header=True):
     hop_b = iptoint(s[4])
     #print "Another data point %s -> %s" % (s[3], s[4]) 
     rates_index = site + "," + client
+    if rates_index not in rates:
+        print "Skipping missing key: %s" % rates_index
+        continue
     if (hop_a not in hops):
       hops[hop_a] = {}
     if (hop_b not in hops[hop_a]):
