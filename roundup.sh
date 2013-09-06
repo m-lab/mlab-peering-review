@@ -12,7 +12,7 @@
 set -x 
 set -e
 
-function run_or_exec () {
+function run_or_exit () {
     local cmd=$1
     echo $cmd
     if ! $cmd ; then
@@ -26,7 +26,7 @@ function run_stages () {
     local site=$2
     local isp=$3
     cmd=$( printf "$SCRIPT_ROOT/support/stages.sh %-12s %s %s" "$city" "$site" "$isp")
-    run_or_exec "$cmd"
+    run_or_exit "$cmd"
 }
 
 # NOTE: sets the root dir for all subsequent scripts
@@ -34,7 +34,7 @@ export SCRIPT_ROOT=$PWD
 
 cat isplist.input | while read city site isp ; do 
     run_stages "$city" "$site" "$isp"
-done
+done || exit 1
 
 # NOTE: runs comparisons between the individual data created above.
 $SCRIPT_ROOT/support/followup.sh
