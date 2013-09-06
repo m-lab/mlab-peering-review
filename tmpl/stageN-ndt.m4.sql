@@ -23,14 +23,34 @@ SELECT
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
                      web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_median,
+    NTH(60,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q60,
+    NTH(70,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q70,
     NTH(75,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
                      web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q75,
+    NTH(80,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q80,
+    NTH(85,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q85,
     NTH(90,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
                      web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q90,
+    NTH(95,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q95,
 FROM 
     DATETABLE
 WHERE
