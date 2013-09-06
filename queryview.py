@@ -558,10 +558,12 @@ def plot_data(x_lists, y_lists, y_errs, c_list, options):
         if options.verbose: print x_lists[y_col], y_lists[y_col]
         p, = ax1.plot_date(ts2d(x_lists[y_col]), y_lists[y_col], 
               xdate=True, ydate=False, marker=marker, markersize=4,
-              #markerfacecolor='none', 
-              #markeredgecolor=color,
               color=color, linewidth=(1 if y_err is None else 1.5),
               linestyle=options.style, figure=fig, label=y_col)
+
+        #y1=[0 for y in y_lists[y_col]]
+        #y2=[y for y in y_lists[y_col]]
+        #ax1.fill_between(ts2d(x_lists[y_col]), y1, y2, where=y2>=y1, facecolor='green', interpolate=True)
 
         if y_err is not None:
             ax1.errorbar(ts2d(x_lists[y_col]), y_lists[y_col], 

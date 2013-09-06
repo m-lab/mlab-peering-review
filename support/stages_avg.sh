@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 
 
-SITE1=${1:?Help: provide m-lab site name}
-SITE2=${2:?Help: provide m-lab site name}
-ISPLIST=${3:?Help: provide ISP name}
-
 function lookup_ip () {
     local host=$1
     PYSCRIPT="import socket; print socket.gethostbyname('"$host"')"
@@ -38,9 +34,9 @@ function handle_stageN_query () {
 
     iplist=$( get_three_ips ndt.iupui $site )
 
-    filtername=input/stage1.$prefix.$site.$isp.input 
+    filtername=input/stageN.$prefix.$site.$ispname.input 
     sqlname=$stage.$prefix.$site.$ispname.sql
-    #rm -f $filtername
+    rm -f $filtername
 
     if test "$ispname" = "cox" ; then
         ispname=" cox"
@@ -65,13 +61,13 @@ function handle_stageN_query () {
 
     if ! test -f sql/$sqlname || test $filtername -nt sql/$sqlname ; then
         # TODO: set literal ts to first day of next month, so that the ts is always greater than DATETABLE dates.
-        PTS=`TZ=UTC python -c 'import time; print int(time.mktime(time.strptime("20130901T20:00", "%Y%m%dT%H:%M")))'`
+        #PTS=`TZ=UTC python -c 'import time; print int(time.mktime(time.strptime("20130902T00:00", "%Y%m%dT%H:%M")))'`
+        PTS=
         m4 -DISP_FILTER_FILENAME=$filtername \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="$iplist" \
            -DSITE=$site \
-           -DPIVOT_TS=$PTS \
-           -DOFFSET=0 \
+           -DOFFSET=36000 \
             tmpl/stageN-ndt.m4.sql > sql/$sqlname
     fi
 
@@ -92,39 +88,14 @@ ISPLIST=${3:?HELP: Please provide a short ISP name, i.e. warner, comcast, verizo
 
 export TZ=UTC
 set -x
+set -e
+
 for ISP in $ISPLIST ; do
 
+    echo site1 $PREFIX $SITE1 $ISP
     handle_stageN_query $PREFIX $SITE1 $ISP
-    #handle_stageN_query $ISP $SITE2
 
     OUTPUT1=sorted/sorted.${PREFIX}.${SITE1}.${ISP}.csv
-    #OUTPUT2=sorted/${SITE2}2${ISP}.csv
-
-    sed -e 's/SITE/'${SITE1}'/g' cache/stageN.${PREFIX}.${SITE1}.${ISP}.sql.csv | sort -g > $OUTPUT1
-    #sed -e 's/SITE/'${SITE2}'/g' cache/stageN.$ISP.$SITE2.sql.csv | sort -g > $OUTPUT2
-
-    #./queryview.py --merge $OUTPUT1 \
-    #               --merge $OUTPUT2 \
-    #               --output out.N.csv --timestamp ts
-    #sort -g out.N.csv > out1.N.csv
-
-    $SCRIPT_ROOT/queryview.py --timestamp ts \
-            -l ${SITE1}_q25 -C violet \
-            -l ${SITE1}_median -C blue \
-            -l ${SITE1}_q60 -C green \
-            -l ${SITE1}_q70 -C goldenrod \
-            -l ${SITE1}_q80 -C orangered \
-            -l ${SITE1}_q90 -C darkred \
-            --count_column ${SITE1}_count \
-            --style '-' \
-            --csv $OUTPUT1 \
-            --output graphs/n.${PREFIX}.${SITE1}.${ISP}.png \
-            --datefmt "%H" \
-            --title "${ISP} Download Rates" \
-            --ylabel "Mbps" \
-            --offset $(( 60*60*8 )) \
-            --xlabel "Eastern Time (UTC-4)" \
-            --ymax 68
 
 done
 

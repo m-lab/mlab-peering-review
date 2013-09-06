@@ -1,7 +1,7 @@
 SELECT 
     
-    -- 900 sec is every 15 minutes. (bin on every 15 minutes)
-    INTEGER(INTEGER(PIVOT_TS+86400-(PIVOT_TS-(web100_log_entry.log_time+OFFSET)%86400))/3600)*3600 AS ts,
+    -- 86400 is one day, 3600 is one hour (bin every 60 minutes)
+    INTEGER(INTEGER(((web100_log_entry.log_time-OFFSET)%86400))/3600)*3600 AS ts,
     -- web100_log_entry.connection_spec.local_ip           AS server_ip,
     -- web100_log_entry.connection_spec.remote_ip          AS client_ip,
 
@@ -14,11 +14,11 @@ SELECT
     NTH(10,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q10,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p10,
     NTH(25,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q25,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p25,
     NTH(50,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
@@ -26,31 +26,31 @@ SELECT
     NTH(60,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q60,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p60,
     NTH(70,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q70,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p70,
     NTH(75,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q75,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p75,
     NTH(80,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q80,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p80,
     NTH(85,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q85,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p85,
     NTH(90,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q90,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_p90,
     NTH(95,QUANTILES(8*web100_log_entry.snap.HCThruOctetsAcked/(
                      web100_log_entry.snap.SndLimTimeRwin +
                      web100_log_entry.snap.SndLimTimeCwnd +
-                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_q95,
+                     web100_log_entry.snap.SndLimTimeSnd),101)) as SITE_95percentile,
 FROM 
     DATETABLE
 WHERE
@@ -75,6 +75,10 @@ WHERE
          web100_log_entry.snap.SndLimTimeCwnd +
          web100_log_entry.snap.SndLimTimeSnd) < 3600000000
     AND web100_log_entry.snap.MinRTT < 1e7
+    AND 8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd) < 40 
     -- restrict to NY lga01 servers, and given ISP address ranges.
     AND web100_log_entry.connection_spec.local_ip IN(SERVERIPS)
     AND ( include(ISP_FILTER_FILENAME) )
