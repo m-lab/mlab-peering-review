@@ -23,6 +23,10 @@ if test "$UPL1" != "$UPL2" ; then
     UPL="${UPL1} and ${UPL2}"
 fi
 
+function capitalize () {
+    local word=$1
+    echo $( tr '[:lower:]' '[:upper:]' <<< ${word:0:1} )${word:1}
+}
 
 export TZ=UTC
 set -x
@@ -32,8 +36,8 @@ OUTPUT1=sorted/sorted.${PREFIX1}.${SITE1}.${ISP1}.csv
 OUTPUT2=sorted/sorted.${PREFIX2}.${SITE2}.${ISP2}.csv
 
 # Start with uplink names for column names
-COL1=$UPL1
-COL2=$UPL2
+COL1=$( capitalize ${ISP1}_over_${UPL1}_- )
+COL2=$( capitalize ${ISP2}_over_${UPL2}_- )
 
 # if that doesn't work, use ISP, Prefix, or Site names
 if test x"$COL1" = x"$COL2" ; then 
@@ -52,9 +56,6 @@ fi
 sed -e 's/SITE/'${COL1}'/g' cache/stageN.${PREFIX1}.${SITE1}.${ISP1}.sql.csv > $OUTPUT1
 sed -e 's/SITE/'${COL2}'/g' cache/stageN.${PREFIX2}.${SITE2}.${ISP2}.sql.csv > $OUTPUT2
 
-./queryview.py --merge $OUTPUT1 \
-               --merge $OUTPUT2 \
-               --output out.N.csv --timestamp ts
 
 PREFIX=$PREFIX1
 if test "$PREFIX1" != "$PREFIX2" ; then
@@ -65,20 +66,37 @@ if test "$SITE1" != "$SITE2" ; then
     SITE="${SITE1}vs${SITE2}"
 fi
 ISP=$ISP1
+ISPCAP=$( capitalize $ISP1 )
 if test "$ISP1" != "$ISP2" ; then
     ISP="${ISP1}vs${ISP2}"
+    C1=$( capitalize $ISP1 )
+    C2=$( capitalize $ISP2 )
+    ISPCAP="$C1 vs $C2"
 fi
 
+./queryview.py --merge $OUTPUT1 \
+               --merge $OUTPUT2 \
+               --output cache/n.${PREFIX}.${SITE}.${ISP}.csv \
+               --timestamp ts
+
 TZ=UTC $SCRIPT_ROOT/queryview.py --timestamp ts \
-            -l ${COL1}_95percentile -C darkblue \
-            -l ${COL2}_95percentile -C darkred \
+            -l ${COL1}_95th_percentile -C darkblue \
+            -l ${COL2}_95th_percentile -C darkred \
+            --count_column ${COL1}_count \
+            --count_column ${COL2}_count \
+            --csv cache/n.${PREFIX}.${SITE}.${ISP}.csv \
+            --output graphs/n.95th.${PREFIX}.${SITE}.${ISP}.png \
             --style '-' \
-            --csv out.N.csv \
-            --output graphs/n.${PREFIX}.${SITE}.${ISP}.png \
+            --marker '' \
             --datefmt "%H" \
-            --title  "${ISP} to $UPL" \
+            --title  "${ISPCAP} Downloads in $PREFIX" \
             --ylabel "Download Rate (Mbps)" \
             --xlabel "Eastern Time (UTC-4)" \
             --offset $(( 6*3600 )) \
-            --ymax 68
+            --scale 0.000278  \
+            --fillbetween \
+            --smoothing 5,3 \
+            --ymax 100
+            # --overlay \
+            #\ --count_ymax 350 \ --ymax 120
 
