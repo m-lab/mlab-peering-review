@@ -66,6 +66,7 @@ function handle_stageN_query () {
            -DSERVERIPS="$iplist" \
            -DSITE=$site \
            -DTSBIN=1800 \
+           -DRATE=27 \
            -DOFFSET=36000 \
             tmpl/stageN-ndt.m4.sql > sql/$sqlname
 

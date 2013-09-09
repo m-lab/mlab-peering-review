@@ -64,5 +64,5 @@ sort -n $outfile.csv > $outfile.2.csv
             --title "$PROVIDER to $ISP Downloads" \
             --ylabel "Mbps" \
             --xlabel "Eastern Time (UTC-4)" \
-            --ymax 68
+            --ymax 35
 

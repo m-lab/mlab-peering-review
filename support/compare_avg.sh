@@ -79,13 +79,14 @@ fi
                --output cache/n.${PREFIX}.${SITE}.${ISP}.csv \
                --timestamp ts
 
+PCT=95th
 TZ=UTC $SCRIPT_ROOT/queryview.py --timestamp ts \
-            -l ${COL1}_95th_percentile -C darkblue \
-            -l ${COL2}_95th_percentile -C darkred \
+            -l ${COL1}_${PCT}_percentile -C darkblue \
+            -l ${COL2}_${PCT}_percentile -C darkred \
             --count_column ${COL1}_count \
             --count_column ${COL2}_count \
             --csv cache/n.${PREFIX}.${SITE}.${ISP}.csv \
-            --output graphs/n.95th.${PREFIX}.${SITE}.${ISP}.png \
+            --output graphs/n.$PCT.${PREFIX}.${SITE}.${ISP}.png \
             --style '-' \
             --marker '' \
             --datefmt "%H" \
@@ -96,7 +97,7 @@ TZ=UTC $SCRIPT_ROOT/queryview.py --timestamp ts \
             --scale 0.000278  \
             --fillbetween \
             --smoothing 5,3 \
-            --ymax 100
+            --ymax 35
             # --overlay \
             #\ --count_ymax 350 \ --ymax 120
 

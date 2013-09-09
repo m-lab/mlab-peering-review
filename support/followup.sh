@@ -20,6 +20,7 @@ $SCRIPT_ROOT/support/compare.sh NewYork lga01 verizon     $INTERNAP Internap \
 $SCRIPT_ROOT/support/compare.sh NewYork lga01 warner      $INTERNAP Internap \
                                 NewYork lga02 warner      $COGENT   Cogent
 
+exit
 # SanFrancisco
 $SCRIPT_ROOT/support/compare.sh SanFrancisco nuq01 comcast $LEVEL3 Level3 \
                                 SanFrancisco nuq02 comcast $OTHER  ISC

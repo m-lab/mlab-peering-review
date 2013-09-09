@@ -84,6 +84,7 @@ function handle_stage1_query () {
         m4 -DISP_FILTER_FILENAME=$filtername \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="$iplist" \
+           -DRATE=35 \
             tmpl/stage1-ndt.m4.sql > sql/$sqlname
     fi
 
