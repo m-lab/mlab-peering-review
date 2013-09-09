@@ -36,6 +36,7 @@ function handle_stageN_query () {
 
     filtername=input/stageN.$prefix.$site.$ispname.input 
     sqlname=$stage.$prefix.$site.$ispname.sql
+    counts_sqlname=$stage.$prefix.$site.$ispname.sql
     rm -f $filtername
 
     if test "$ispname" = "cox" ; then
@@ -60,19 +61,29 @@ function handle_stageN_query () {
     fi
 
     if ! test -f sql/$sqlname || test $filtername -nt sql/$sqlname ; then
-        # TODO: set literal ts to first day of next month, so that the ts is always greater than DATETABLE dates.
-        #PTS=`TZ=UTC python -c 'import time; print int(time.mktime(time.strptime("20130902T00:00", "%Y%m%dT%H:%M")))'`
-        PTS=
         m4 -DISP_FILTER_FILENAME=$filtername \
            -DDATETABLE=[m_lab.2013_08] \
            -DSERVERIPS="$iplist" \
            -DSITE=$site \
+           -DTSBIN=1800 \
            -DOFFSET=36000 \
             tmpl/stageN-ndt.m4.sql > sql/$sqlname
+
+        #for rate in 30 40 50 60 80 100 120 200 800 ; do
+        #    m4 -DISP_FILTER_FILENAME=$filtername \
+        #       -DDATETABLE=[m_lab.2013_08] \
+        #       -DSERVERIPS="$iplist" \
+        #       -DSITE=$site \
+        #       -DTSBIN=1800 \
+        #       -DOFFSET=36000 \
+        #        tmpl/stageN-counts.m4.sql > sql/c.$counts_sqlname
+        #done
     fi
 
     QV=./queryview.py 
     $QV --query sql/$sqlname --noplot
+    #sleep 5
+    #$QV --query sql/c.$sqlname --noplot
 }
 
 mkdir -p sorted
