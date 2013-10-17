@@ -38,3 +38,4 @@ done || exit 1
 
 # NOTE: runs comparisons between the individual data created above.
 $SCRIPT_ROOT/support/followup.sh
+$SCRIPT_ROOT/support/followup_avg.sh
