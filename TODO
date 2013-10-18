@@ -24,3 +24,48 @@ Stage 3
  * intermediate: stage3-filters-from-stage2
  * output: stage3-per-isp-site-hops (sip', [h1, ... hn], cip, ts, test_id)
 
+Graph Types
+===========
+
+ * raw scatter plots - take raw ndt download rates (for a given site/isp) and
+   scatter plot them.
+    - one isp per plot:  prefix.site.isp.png
+
+ * simple path diagrams - get to hops.py then execute diagrams.sh
+    - one diagram per isp: prefix.site.isp.
+
+ * post-hops scatter plots - take the samples identified by ts_hops and
+   scatter plot them.  Like raw scatter plots, but "filtered" by diagram
+   paths.  plots.sh begins to automate this process.
+
+ * other combinations of sites/isps/whathaveyou. - custom.sh
+
+
+Comparisons
+===========
+
+The above steps will generate the raw data for traffic from isps to specific
+sites.  Comparitive analysis will be more interesting.
+
+# Basically, this is Cogent vs Internap in ONE CITY x TWO SITES
+
+NewYork : comcast     : lga01->comcast     vs lga02->comcast
+NewYork : cablevision : lga01->cablevision vs lga02->cablevision
+NewYork : verizon     : lga01->verizon     vs lga02->verizon
+NewYork : time warner : lga01->time warner vs lga02->time warner 
+
+SanFrancisco : comcast : nuq01->comcast    vs nuq02->comcast
+SanFrancisco : cox     : nuq01->cox        vs nuq02->cox    
+
+# Basically, A vs B in ONE CITY x ONE SITE
+
+LAX - cox,charter vs comcast, or verizon, or timewarner
+DFW - cox, vs comcast, or att, verizone, timewarner
+
+ORD - comcast, charter, warner (all good performance)
+NUQ - comcast, cox, (sort of charter, verizon, warner)
+
+ATL - charter, comcast, cox, verizon, warner
+IAD - comcast, verizon, warner
+
+# MULTIPLE CITIES - ONE ISP

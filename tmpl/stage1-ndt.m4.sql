@@ -9,7 +9,7 @@ SELECT
                      web100_log_entry.snap.SndLimTimeCwnd +
                      web100_log_entry.snap.SndLimTimeSnd) AS raw_download_rate,
     -- RETRANSMISSION
-    (web100_log_entry.snap.OctetsRetrans/web100_log_entry.snap.DataOctetsOut)  AS raw_retrans,
+    -- (web100_log_entry.snap.OctetsRetrans/web100_log_entry.snap.DataOctetsOut)  AS raw_retrans,
     -- TODO: maybe network or client or server-limited time ratios?
 FROM 
     DATETABLE
@@ -35,6 +35,10 @@ WHERE
          web100_log_entry.snap.SndLimTimeCwnd +
          web100_log_entry.snap.SndLimTimeSnd) < 3600000000
     AND web100_log_entry.snap.MinRTT < 1e7
+    AND 8*web100_log_entry.snap.HCThruOctetsAcked/(
+                     web100_log_entry.snap.SndLimTimeRwin +
+                     web100_log_entry.snap.SndLimTimeCwnd +
+                     web100_log_entry.snap.SndLimTimeSnd) < RATE
     -- restrict to NY lga01 servers, and given ISP address ranges.
     AND web100_log_entry.connection_spec.local_ip IN(SERVERIPS)
     AND ( include(ISP_FILTER_FILENAME) )
